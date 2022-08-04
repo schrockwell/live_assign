@@ -28,7 +28,7 @@ defmodule MyAppWeb.UserProfileComponent
   computed :age
 
   def handle_click("toggle-details", _, socket) do
-    {:noreply, put_state(socket, expand_details?: not socket.assigns.expand_details)}
+    {:noreply, put_state(socket, expand_details?: not socket.assigns.expand_details?)}
   end
 
   @react to: :profile
