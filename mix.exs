@@ -3,7 +3,7 @@ defmodule Love.MixProject do
 
   def project do
     [
-      app: :love,
+      app: :love_ex,
       version: "0.1.0",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
