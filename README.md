@@ -53,7 +53,7 @@ The `compute_age/1` function is a **reactive callback**. It is automatically eva
 
 ### Call `super` when overriding `mount/1` and `update/2`
 
-Love.Component implements the LiveComponent `mount/1` and `update/2` callbacks. If your component needs to override either of these functions, `super/{1,2}` _must_ be invoked so that Live.Component can continue to work its magic.
+Love.Component implements the LiveComponent `mount/1` and `update/2` callbacks. If your component needs to override either of these functions, `super/{1,2}` _must_ be invoked so that Love.Component can continue to work its magic.
 
 ## Installation
 
