@@ -14,6 +14,7 @@ defmodule Love.Component do
     Module.put_attribute(__CALLER__.module, :__prop_fields__, %{})
     Module.put_attribute(__CALLER__.module, :__state_fields__, %{})
     Module.put_attribute(__CALLER__.module, :__computed_fields__, %{})
+    Module.put_attribute(__CALLER__.module, :__field_defaults__, %{})
 
     quote do
       @on_definition Love.Component
@@ -85,14 +86,17 @@ defmodule Love.Component do
 
     meta_fn = Internal.meta_fn_name()
 
-    quote do
-      # Delay these definitions until as late as possible, so we can ensure the attributes
-      # are fully set up (i.e. wait for __on_definition__/6 to evaluate first!)
-      def unquote(meta_fn)(:reactive), do: @__reactive_fields__
-      def unquote(meta_fn)(:prop), do: @__prop_fields__
-      def unquote(meta_fn)(:state), do: @__state_fields__
-      def unquote(meta_fn)(:computed), do: @__computed_fields__
-    end
+    meta_fns =
+      quote do
+        # Delay these definitions until as late as possible, so we can ensure the attributes
+        # are fully set up (i.e. wait for __on_definition__/6 to evaluate first!)
+        def unquote(meta_fn)(:reactive), do: @__reactive_fields__
+        def unquote(meta_fn)(:prop), do: @__prop_fields__
+        def unquote(meta_fn)(:state), do: @__state_fields__
+        def unquote(meta_fn)(:computed), do: @__computed_fields__
+      end
+
+    [meta_fns, def_defaults(env.module)]
   end
 
   # Assigns :triggers to state and prop field metadata
@@ -142,6 +146,8 @@ defmodule Love.Component do
       Map.put(props, key, quoted_opts)
     end)
 
+    put_quoted_default(__CALLER__.module, key, quoted_opts[:default])
+
     nil
   end
 
@@ -156,6 +162,8 @@ defmodule Love.Component do
     update_attribute(__CALLER__.module, :__state_fields__, fn state ->
       Map.put(state, key, quoted_opts)
     end)
+
+    put_quoted_default(__CALLER__.module, key, quoted_opts[:default])
 
     nil
   end
@@ -173,6 +181,40 @@ defmodule Love.Component do
     end)
 
     nil
+  end
+
+  @doc """
+  Defines an event prop.
+
+  Events are always optional. The default implementation is an anonymous function with
+  the specified arity that returns `:ok`.
+  """
+  defmacro event(quoted_defn) do
+    # The strategy here is to just parse the quoted function head and then define
+    # a plain old optional prop with a no-op default.
+    {key, _, args} = quoted_defn
+    validate_not_defined!(__CALLER__.module, :event, key)
+    args = for {_arg, x, y} <- args, do: {:_, x, y}
+
+    quote do
+      prop unquote(key), default: fn unquote_splicing(args) -> :ok end
+    end
+  end
+
+  defp put_quoted_default(module, key, quoted) do
+    update_attribute(module, :__field_defaults__, fn defaults ->
+      Map.put(defaults, key, quoted)
+    end)
+  end
+
+  defp def_defaults(module) do
+    for {key, quoted} <- Module.get_attribute(module, :__field_defaults__) do
+      quote do
+        def __default__(unquote(key)) do
+          unquote(quoted)
+        end
+      end
+    end
   end
 
   @doc """
@@ -209,20 +251,22 @@ defmodule Love.Component do
 
   defp validate_not_defined!(module, type, key) do
     [
-      react: :__reactive_fields__,
+      computed: :__computed_fields__,
       prop: :__prop_fields__,
-      state: :__state_fields__,
-      computed: :__computed_fields__
+      react: :__reactive_fields__,
+      state: :__state_fields__
     ]
     |> Enum.find(fn {_type, attr} ->
       key in (module |> Module.get_attribute(attr, []) |> Map.keys())
     end)
     |> case do
       {^type, _attr} ->
-        raise "#{type} #{inspect(key)} is already defined"
+        raise CompileError, description: "#{type} #{inspect(key)} is already defined"
 
       {defined_type, _attr} ->
-        raise "#{inspect(key)} is already defined as #{friendly_name(defined_type)}, and can't be reused as #{friendly_name(type)}"
+        raise CompileError,
+          description:
+            "#{inspect(key)} is already defined as #{friendly_name(defined_type)}, and can't be reused as #{friendly_name(type)}"
 
       nil ->
         nil
@@ -230,28 +274,29 @@ defmodule Love.Component do
   end
 
   defp friendly_name(:computed), do: "computed"
+  defp friendly_name(:event), do: "event"
   defp friendly_name(:prop), do: "a prop"
   defp friendly_name(:react), do: "a reactive function"
   defp friendly_name(:state), do: "state"
 
   defp eval_metas(env, type, attr_name) do
     update_attribute(env.module, attr_name, fn attr ->
-      Map.new(attr, fn {key, quoted_opts} ->
-        {key, eval_meta(quoted_opts, type, env)}
+      Map.new(attr, fn {key, value} ->
+        {key, eval_meta(value, type, env)}
       end)
     end)
   end
+
+  # If this is a map, it's already been evaluated
+  defp eval_meta(%{} = meta, _key, _env), do: meta
 
   # Returns metadata map for a prop field
   defp eval_meta(quoted_opts, :prop, env) do
     {opts, _} = Module.eval_quoted(env, quoted_opts)
 
-    [
-      required?: not Keyword.has_key?(opts, :default),
-      default: nil
-    ]
-    |> Keyword.merge(opts)
-    |> Map.new()
+    %{
+      required?: not Keyword.has_key?(opts, :default)
+    }
   end
 
   # Returns metadata map for a state field
@@ -259,8 +304,7 @@ defmodule Love.Component do
     {opts, _} = Module.eval_quoted(env, quoted_opts)
 
     %{
-      initialize?: Keyword.has_key?(opts, :initial),
-      initial: opts[:initial]
+      initialize?: Keyword.has_key?(opts, :default)
     }
   end
 

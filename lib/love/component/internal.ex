@@ -149,12 +149,9 @@ defmodule Love.Component.Internal do
   defp initial_state(socket) do
     socket
     |> get_meta(:state)
-    |> Enum.reduce(%{}, fn {key, meta}, initial_state ->
-      if meta.initialize? do
-        Map.put(initial_state, key, meta.initial)
-      else
-        initial_state
-      end
+    |> Enum.filter(fn {_, meta} -> meta.initialize? end)
+    |> Map.new(fn {key, _meta} ->
+      {key, live_view_module(socket).__default__(key)}
     end)
   end
 
@@ -164,8 +161,8 @@ defmodule Love.Component.Internal do
     socket
     |> get_meta(:prop)
     |> Enum.reject(fn {_, meta} -> meta.required? end)
-    |> Map.new(fn {key, meta} ->
-      {key, meta.default}
+    |> Map.new(fn {key, _meta} ->
+      {key, live_view_module(socket).__default__(key)}
     end)
   end
 

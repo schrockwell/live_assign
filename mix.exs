@@ -5,7 +5,7 @@ defmodule Love.MixProject do
     [
       app: :love_ex,
       version: "0.1.0",
-      elixir: "~> 1.13",
+      elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
@@ -27,10 +27,12 @@ defmodule Love.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:phoenix_live_view, "~> 0.16"},
-      {:ex_doc, "~> 0.28.4", only: :dev}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:ex_doc, "~> 0.28.4", only: :dev},
+      {:floki, ">= 0.30.0", only: :test},
+      {:jason, "~> 1.0", only: :test},
+      {:live_isolated_component, "~> 0.3", only: [:test], runtime: false},
+      {:mix_test_watch, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:phoenix_live_view, "~> 0.16"}
     ]
   end
 

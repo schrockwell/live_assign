@@ -27,8 +27,15 @@ defmodule MyAppWeb.UserProfileComponent
 
   computed :age
 
+  event on_share(profile, social)
+
   def handle_click("toggle-details", _, socket) do
     {:noreply, put_state(socket, expand_details?: not socket.assigns.expand_details?)}
+  end
+
+  def handle_click("share-profile", %{"social" => social}, socket) do
+    socket.assigns.on_share.(socket.assigns.profile, social)
+    {:noreply, socket}
   end
 
   @react to: :profile
@@ -48,6 +55,8 @@ The `:expand_details?` assign is **state** and has an initial value. It can be m
 The `:age` assign is **computed** and is set by `put_computed/2`. If we forget to set it, a helpful runtime error will occur.
 
 The `compute_age/1` function is a **reactive callback**. It is automatically evaluated whenever any of the assigns listed in the `@react to: ...` attribute have changed. The function can react to prop changes, state changes, and even _other_ reactive callbacks.
+
+The `:on_share_profile` assign is an **event prop** that can accept a callback function to be invoked when the component does something of interest. Event props are always optional, with default no-op implementations.
 
 ## Gotchas
 
