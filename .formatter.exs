@@ -7,8 +7,7 @@
     state: 1,
     state: 2,
     computed: 1,
-    computed: 2,
-    event: 1
+    computed: 2
   ],
   export: [
     locals_without_parens: [
@@ -17,8 +16,7 @@
       state: 1,
       state: 2,
       computed: 1,
-      computed: 2,
-      event: 1
+      computed: 2
     ]
   ]
 ]

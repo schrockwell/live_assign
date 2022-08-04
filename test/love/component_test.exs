@@ -46,10 +46,7 @@ defmodule Love.ComponentTest do
 
       computed :age
 
-      event on_expanded(visible?)
-
       def handle_click("toggle-details", _, socket) do
-        socket.assigns.on_expanded.(not socket.assigns.details_expanded?)
         {:noreply, put_state(socket, details_expanded?: not socket.assigns.details_expanded?)}
       end
 

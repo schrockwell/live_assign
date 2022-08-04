@@ -183,24 +183,6 @@ defmodule Love.Component do
     nil
   end
 
-  @doc """
-  Defines an event prop.
-
-  Events are always optional. The default implementation is an anonymous function with
-  the specified arity that returns `:ok`.
-  """
-  defmacro event(quoted_defn) do
-    # The strategy here is to just parse the quoted function head and then define
-    # a plain old optional prop with a no-op default.
-    {key, _, args} = quoted_defn
-    validate_not_defined!(__CALLER__.module, :event, key)
-    args = for {_arg, x, y} <- args, do: {:_, x, y}
-
-    quote do
-      prop unquote(key), default: fn unquote_splicing(args) -> :ok end
-    end
-  end
-
   defp put_quoted_default(module, key, quoted) do
     update_attribute(module, :__field_defaults__, fn defaults ->
       Map.put(defaults, key, quoted)
@@ -274,7 +256,6 @@ defmodule Love.Component do
   end
 
   defp friendly_name(:computed), do: "computed"
-  defp friendly_name(:event), do: "event"
   defp friendly_name(:prop), do: "a prop"
   defp friendly_name(:react), do: "a reactive function"
   defp friendly_name(:state), do: "state"
