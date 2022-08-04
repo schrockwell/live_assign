@@ -42,6 +42,8 @@ defmodule Love.ComponentTest do
       prop :profile
       prop :avatar_visible?, default: false
 
+      slot :inner_block
+
       state :details_expanded?, default: false
 
       computed :age

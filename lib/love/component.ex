@@ -152,6 +152,17 @@ defmodule Love.Component do
   end
 
   @doc """
+  Defines a slot prop.
+
+  Takes the same arguments as `prop/2`.
+  """
+  defmacro slot(key, quoted_opts \\ []) when is_atom(key) do
+    quote do
+      prop unquote(key), unquote(quoted_opts)
+    end
+  end
+
+  @doc """
   Defines a state field.
 
   The second arg is the initial value for this state field (defaults to `nil` if omitted).

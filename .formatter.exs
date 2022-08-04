@@ -7,7 +7,9 @@
     state: 1,
     state: 2,
     computed: 1,
-    computed: 2
+    computed: 2,
+    slot: 1,
+    slot: 2
   ],
   export: [
     locals_without_parens: [
@@ -16,7 +18,9 @@
       state: 1,
       state: 2,
       computed: 1,
-      computed: 2
+      computed: 2,
+      slot: 1,
+      slot: 2
     ]
   ]
 ]
