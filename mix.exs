@@ -4,7 +4,7 @@ defmodule Love.MixProject do
   def project do
     [
       app: :love_ex,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
