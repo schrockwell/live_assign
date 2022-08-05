@@ -22,6 +22,8 @@ defmodule Love.Component do
 
       import Love.Component
 
+      prop :id
+
       def mount(socket) do
         {:ok, Love.Component.Internal.init(socket, __MODULE__)}
       end

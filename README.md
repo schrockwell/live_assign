@@ -19,7 +19,6 @@ defmodule MyAppWeb.UserProfileComponent
   use Love.Component
   import Love.Component
 
-  prop :id
   prop :profile
   prop :show_avatar?, default: false
 
@@ -39,7 +38,9 @@ defmodule MyAppWeb.UserProfileComponent
 end
 ```
 
-The `:id` and `:profile` assigns are **required props**. If they are not passed in, a helpful runtime error will occur.
+The `:profile` assign is a **required prop**. If it is not passed in, a helpful runtime error will occur.
+
+The `:id` assign is also a required prop, but it is implicitly defined, because every LiveComponent requires an `:id`.
 
 The `:show_avatar?` assign is an **optional prop**.
 
