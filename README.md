@@ -22,9 +22,11 @@ defmodule MyAppWeb.UserProfileComponent
   prop :profile
   prop :show_avatar?, default: false
 
-  state :expand_details?, initial: false
+  state :expand_details?, default: false
 
   computed :age
+
+  slot :inner_block
 
   def handle_click("toggle-details", _, socket) do
     {:noreply, put_state(socket, expand_details?: not socket.assigns.expand_details?)}
@@ -47,6 +49,8 @@ The `:show_avatar?` assign is an **optional prop**.
 The `:expand_details?` assign is **state** and has an initial value. It can be modified via `put_state/2`.
 
 The `:age` assign is **computed** and is set by `put_computed/2`. If we forget to set it, a helpful runtime error will occur.
+
+The `:inner_block` assign is a **required slot prop**. It is defined and used just a regular prop. A slot prop can be made optional with the `default: []` option.
 
 The `compute_age/1` function is a **reactive callback**. It is automatically evaluated whenever any of the assigns listed in the `@react to: ...` attribute have changed. The function can react to prop changes, state changes, and even _other_ reactive callbacks.
 
