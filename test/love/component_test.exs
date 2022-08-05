@@ -5,8 +5,6 @@ defmodule Love.ComponentTest do
 
   import LiveIsolatedComponent
   import Phoenix.ConnTest
-  import Phoenix.LiveView, only: [assign: 3]
-  import Phoenix.LiveView.Helpers, only: [sigil_H: 2]
   import Phoenix.LiveViewTest
 
   defmodule BaseComponent do
@@ -279,13 +277,70 @@ defmodule Love.ComponentTest do
     end
   end
 
-  def render_assigns(assigns, keys) do
-    assigns = assign(assigns, :keys, keys)
+  describe "message" do
+    test "can send a message to a pid" do
+      defcomponent PidMessageTest do
+        message :clicked
 
-    ~H"""
-      <%= for key <- @keys do %>
-        <div id={key} data-value={assigns[key]} />
-      <% end %>
-    """
+        def handle_event("click", _, socket) do
+          {:noreply, emit(socket, :clicked, :hoopy)}
+        end
+
+        def render(assigns), do: ~H[<button phx-click="click" phx-target={@myself} />]
+      end
+
+      {:ok, view, _html} = live_isolated_component(PidMessageTest, assigns: %{clicked: self()})
+
+      view |> element("button") |> render_click()
+
+      assert_received %Love.Message{key: :clicked, payload: :hoopy}
+    end
+
+    test "can send a message to a component" do
+      defcomponent SendMessageComponent do
+        message :clicked
+
+        def handle_event("click", _, socket) do
+          {:noreply, emit(socket, :clicked, :hoopy)}
+        end
+
+        def render(assigns), do: ~H[<button phx-click="click" phx-target={@myself} />]
+      end
+
+      defcomponent ReceiveMessageComponent do
+        state :received?, default: false
+
+        def handle_message(:clicked, :hoopy, socket) do
+          {:ok, put_state(socket, received?: true)}
+        end
+
+        def render(assigns) do
+          ~H"""
+          <div id={@id} data-received={inspect(@received?)} />
+          """
+        end
+      end
+
+      defmodule ComponentMessageTest do
+        use Phoenix.LiveView
+
+        def render(assigns) do
+          ~H"""
+          <div>
+            <.live_component module={SendMessageComponent} id="sender" clicked={{ReceiveMessageComponent, "receiver"}} />
+            <.live_component module={ReceiveMessageComponent} id="receiver" />
+          </div>
+          """
+        end
+      end
+
+      {:ok, view, _html} = live_isolated(build_conn(), ComponentMessageTest)
+
+      assert view |> has_element?("[data-received=false]")
+
+      view |> element("button") |> render_click()
+
+      assert view |> has_element?("[data-received=true]")
+    end
   end
 end

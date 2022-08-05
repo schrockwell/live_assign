@@ -3,6 +3,11 @@ defmodule Love.Component do
   🔥 Rekindle your love for components.
   """
 
+  @callback handle_message(key :: atom, payload :: any, socket :: Phoenix.LiveView.Socket.t()) ::
+              {:ok, socket :: Phoenix.LiveView.Socket.t()}
+
+  @optional_callbacks handle_message: 3
+
   alias Love.Component.Internal
 
   ##################################################
@@ -17,6 +22,7 @@ defmodule Love.Component do
     Module.put_attribute(__CALLER__.module, :__field_defaults__, %{})
 
     quote do
+      @behaviour Love.Component
       @on_definition Love.Component
       @before_compile Love.Component
 
@@ -165,6 +171,15 @@ defmodule Love.Component do
   end
 
   @doc """
+  Defines a message prop.
+  """
+  defmacro message(key) when is_atom(key) do
+    quote do
+      prop unquote(key), default: nil
+    end
+  end
+
+  @doc """
   Defines a state field.
 
   The second arg is the initial value for this state field (defaults to `nil` if omitted).
@@ -306,4 +321,6 @@ defmodule Love.Component do
   defp eval_meta(_quoted_opts, :computed, _env) do
     %{}
   end
+
+  defdelegate emit(socket, key, payload), to: Internal
 end

@@ -8,6 +8,7 @@ Love.Component provides functionality on top of Phoenix.LiveComponent to improve
   - **Props** are passed in to the component and are never updated internally
   - **State** is managed entirely by the component
   - **Computed** values are derived entirely from other values
+- Universal **events** that can handled by LiveViews and LiveComponents using the exact same `handle_message/3` callback
 - Simple **reactivity** so that computed values and other side-effects are automatically invoked when component state changes
 - **Runtime checks** to ensure that everything you define has been assigned, and nothing you haven't defined isn't
 
@@ -28,8 +29,15 @@ defmodule MyAppWeb.UserProfileComponent
 
   slot :inner_block
 
+  message :on_expanded
+
   def handle_click("toggle-details", _, socket) do
-    {:noreply, put_state(socket, expand_details?: not socket.assigns.expand_details?)}
+    expanded? = not socket.assigns.expand_details?
+
+    {:noreply,
+     socket
+     |> emit(:on_expanded, expanded?)
+     |> put_state(expand_details?: expanded?)}
   end
 
   @react to: :profile
@@ -51,6 +59,8 @@ The `:expand_details?` assign is **state** and has an initial value. It can be m
 The `:age` assign is **computed** and is set by `put_computed/2`. If we forget to set it, a helpful runtime error will occur.
 
 The `:inner_block` assign is a **required slot prop**. It is defined and used just a regular prop. A slot prop can be made optional with the `default: []` option.
+
+The `:on_expanded` assign is a **message prop**. Messages sent via `emit/3` can be handled by any Love.View (coming soon) _or_ Love.Component that implements the universal `handle_message/3` callback. Pass in a pid to send a message to a Love.View, or `{module, id}` to send a message to a Love.Component.
 
 The `compute_age/1` function is a **reactive callback**. It is automatically evaluated whenever any of the assigns listed in the `@react to: ...` attribute have changed. The function can react to prop changes, state changes, and even _other_ reactive callbacks.
 

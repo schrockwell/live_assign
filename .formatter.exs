@@ -9,7 +9,8 @@
     computed: 1,
     computed: 2,
     slot: 1,
-    slot: 2
+    slot: 2,
+    message: 1
   ],
   export: [
     locals_without_parens: [
@@ -20,7 +21,8 @@
       computed: 1,
       computed: 2,
       slot: 1,
-      slot: 2
+      slot: 2,
+      message: 1
     ]
   ]
 ]

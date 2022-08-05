@@ -27,6 +27,16 @@ defmodule Love.Component.Internal do
   @doc """
   Called from the LiveComponent.update/2 callback.
   """
+  def update_props_and_reactive(socket, %{__message__: %Love.Message{} = message}) do
+    case live_view_module(socket).handle_message(message.key, message.payload, socket) do
+      {:ok, socket} ->
+        socket
+
+      _else ->
+        raise "expected handle_message/3 callback to return {:ok, socket}"
+    end
+  end
+
   def update_props_and_reactive(socket, new_assigns) do
     socket
     |> merge_props(new_assigns)
@@ -105,6 +115,27 @@ defmodule Love.Component.Internal do
     socket
     |> validate_assign_key!(:prop, key)
     |> assign(key, value)
+  end
+
+  @doc """
+  Emit a message.
+  """
+  def emit(socket, key, payload) do
+    case socket.assigns[key] do
+      nil ->
+        nil
+
+      {pid, custom_key} when is_pid(pid) ->
+        Love.send_message(pid, custom_key, payload)
+
+      {module, id, custom_key} ->
+        Love.send_message({module, id}, custom_key, payload)
+
+      destination ->
+        Love.send_message(destination, key, payload)
+    end
+
+    socket
   end
 
   ##################################################
