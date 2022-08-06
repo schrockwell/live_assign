@@ -1,5 +1,6 @@
 # Used by "mix format"
 [
+  import_deps: [:phoenix_live_view],
   inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"],
   locals_without_parens: [
     prop: 1,

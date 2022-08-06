@@ -12,7 +12,6 @@ defmodule Love.ComponentTest do
       quote do
         use Phoenix.LiveComponent
         use Love.Component
-        import Love.Component
 
         def render(var!(assigns)), do: ~H""
 
