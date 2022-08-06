@@ -7,7 +7,7 @@ defmodule Love.Component do
   alias Phoenix.LiveView
 
   @callback handle_message(key :: atom, payload :: any, socket :: LiveView.Socket.t()) ::
-              {:ok, socket :: LiveView.Socket.t()}
+              socket :: LiveView.Socket.t()
 
   @optional_callbacks handle_message: 3
 
@@ -157,11 +157,11 @@ defmodule Love.Component do
   @doc false
   def on_update(socket, %{__message__: %Love.Message{} = message}) do
     case Common.live_view_module(socket).handle_message(message.key, message.payload, socket) do
-      {:ok, socket} ->
+      %LiveView.Socket{} = socket ->
         socket
 
       _else ->
-        raise "expected handle_message/3 callback to return {:ok, socket}"
+        raise "expected handle_message/3 callback to return a %Phoenix.LiveView.Socket{}"
     end
   end
 
