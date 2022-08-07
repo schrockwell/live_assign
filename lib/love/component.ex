@@ -6,10 +6,15 @@ defmodule Love.Component do
   alias Love.Internal
   alias Phoenix.LiveView
 
-  @callback handle_message(key :: atom, payload :: any, socket :: LiveView.Socket.t()) ::
+  @callback handle_message(
+              key :: atom,
+              source :: any,
+              payload :: any,
+              socket :: LiveView.Socket.t()
+            ) ::
               socket :: LiveView.Socket.t()
 
-  @optional_callbacks handle_message: 3
+  @optional_callbacks handle_message: 4
 
   ##################################################
   # __using__/1
@@ -160,7 +165,12 @@ defmodule Love.Component do
   TODO: Document me.
   """
   def on_update(socket, %{__message__: %Love.Message{} = message}) do
-    case Internal.live_view_module(socket).handle_message(message.key, message.payload, socket) do
+    case Internal.live_view_module(socket).handle_message(
+           message.key,
+           message.source,
+           message.payload,
+           socket
+         ) do
       %LiveView.Socket{} = socket ->
         socket
 

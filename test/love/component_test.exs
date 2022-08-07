@@ -310,7 +310,7 @@ defmodule Love.ComponentTest do
       defcomponent ReceiveMessageComponent do
         state :received?, default: false
 
-        def handle_message(:on_clicked, :hoopy, socket) do
+        def handle_message(:on_clicked, {SendMessageComponent, "sender"}, :hoopy, socket) do
           put_state(socket, received?: true)
         end
 

@@ -298,25 +298,27 @@ defmodule Love.Internal do
   end
 
   ##################################################
-  # RUNTIME - EVENTS AND MESSAGING
+  # RUNTIME - COMPONENT EVENTS
   ##################################################
 
   @doc """
   Emit a message.
   """
   def emit(socket, key, payload) do
+    source = {live_view_module(socket), socket.assigns.id}
+
     case socket.assigns[key] do
       nil ->
         nil
 
       {pid, custom_key} when is_pid(pid) ->
-        Love.send_message(pid, custom_key, payload)
+        Love.send_message(pid, custom_key, payload, source: source)
 
       {module, id, custom_key} ->
-        Love.send_message({module, id}, custom_key, payload)
+        Love.send_message({module, id}, custom_key, payload, source: source)
 
       destination ->
-        Love.send_message(destination, key, payload)
+        Love.send_message(destination, key, payload, source: source)
     end
 
     socket

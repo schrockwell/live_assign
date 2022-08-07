@@ -1,9 +1,10 @@
 defmodule Love do
   @type destination :: pid | {module, String.t() | atom}
 
-  @spec send_message(destination(), atom, any) :: :ok
-  def send_message(destination, key, payload) do
-    message = %Love.Message{key: key, payload: payload}
+  @spec send_message(destination :: destination(), key :: atom, payload :: any, opts :: keyword) ::
+          :ok
+  def send_message(destination, key, payload, opts \\ []) do
+    message = %Love.Message{key: key, source: opts[:source], payload: payload}
 
     case destination do
       pid when is_pid(pid) ->
