@@ -88,6 +88,13 @@ defmodule Love.Component do
   Takes the same arguments as `prop/2`.
   """
   defmacro slot(key, quoted_opts \\ []) when is_atom(key) do
+    quoted_opts =
+      if quoted_opts[:required?] == false do
+        Keyword.put_new(quoted_opts, :default, [])
+      else
+        quoted_opts
+      end
+
     Internal.define_prop(__CALLER__, key, quoted_opts)
   end
 

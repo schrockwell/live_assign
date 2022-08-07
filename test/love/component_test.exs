@@ -41,6 +41,7 @@ defmodule Love.ComponentTest do
       prop :avatar_visible?, default: false
 
       slot :inner_block
+      slot :whatever, required?: false
 
       state :details_expanded?, default: false
 
