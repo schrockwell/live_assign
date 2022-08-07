@@ -133,7 +133,7 @@ defmodule Love.ComponentTest do
           live_isolated_component(RequiredProp, assigns: %{})
         end)
 
-      assert error.message == "expected required prop :foo to be assigned"
+      assert error.message == "expected prop :foo to be assigned"
     end
   end
 
@@ -280,28 +280,28 @@ defmodule Love.ComponentTest do
   describe "message" do
     test "can send a message to a pid" do
       defcomponent PidMessageTest do
-        message :clicked
+        event :on_clicked
 
         def handle_event("click", _, socket) do
-          {:noreply, emit(socket, :clicked, :hoopy)}
+          {:noreply, emit(socket, :on_clicked, :hoopy)}
         end
 
         def render(assigns), do: ~H[<button phx-click="click" phx-target={@myself} />]
       end
 
-      {:ok, view, _html} = live_isolated_component(PidMessageTest, assigns: %{clicked: self()})
+      {:ok, view, _html} = live_isolated_component(PidMessageTest, assigns: %{on_clicked: self()})
 
       view |> element("button") |> render_click()
 
-      assert_received %Love.Message{key: :clicked, payload: :hoopy}
+      assert_received %Love.Message{key: :on_clicked, payload: :hoopy}
     end
 
     test "can send a message to a component" do
       defcomponent SendMessageComponent do
-        message :clicked
+        event :on_clicked
 
         def handle_event("click", _, socket) do
-          {:noreply, emit(socket, :clicked, :hoopy)}
+          {:noreply, emit(socket, :on_clicked, :hoopy)}
         end
 
         def render(assigns), do: ~H[<button phx-click="click" phx-target={@myself} />]
@@ -310,7 +310,7 @@ defmodule Love.ComponentTest do
       defcomponent ReceiveMessageComponent do
         state :received?, default: false
 
-        def handle_message(:clicked, :hoopy, socket) do
+        def handle_message(:on_clicked, :hoopy, socket) do
           put_state(socket, received?: true)
         end
 
@@ -327,7 +327,7 @@ defmodule Love.ComponentTest do
         def render(assigns) do
           ~H"""
           <div>
-            <.live_component module={SendMessageComponent} id="sender" clicked={{ReceiveMessageComponent, "receiver"}} />
+            <.live_component module={SendMessageComponent} id="sender" on_clicked={{ReceiveMessageComponent, "receiver"}} />
             <.live_component module={ReceiveMessageComponent} id="receiver" />
           </div>
           """

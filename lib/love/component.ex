@@ -87,9 +87,9 @@ defmodule Love.Component do
   end
 
   @doc """
-  Defines a message prop.
+  Defines a event prop.
   """
-  defmacro message(key) when is_atom(key) do
+  defmacro event(key) when is_atom(key) do
     Internal.define_prop(__CALLER__, key, [])
   end
 
