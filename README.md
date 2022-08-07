@@ -1,24 +1,22 @@
-# 💕 Love.View and Love.Component 💕
+# Love.View and Love.Component
 
-## Fall in love all over again.
-
-Love provides functionality on top of Phoenix LiveView to improve developer ergonomics through a few simple conventions.
+Love provides functionality on top of Phoenix LiveView to improve developer ergonomics through a conventions.
 
 LiveView and LiveComponent _both_ gain:
 
 - **State** assigns which can trigger reactive functions
 - **Reactive functions** that are automatically invoked upon state changes
 - **Computed** assigns which are purely derived from other state
-- **Universal event handling** via the `handle_message/4` callback
+- **Universal event handling** via the `handle_message/4` callback on a LiveView or LiveComponent
 - **Runtime checks** with developer-friendly error messages
 
 LiveComponents also gain additional functionality:
 
 - **Prop** assigns which are strictly passed in to the component and never modified internally
 - **Slot** props
-- **Event** props to represent events that can be raised by the component and universally handled by either a LiveComponent OR LiveView via `handle_message/4`
+- **Event** props to represent events that can be raised by the component and universally handled by either a LiveComponent or LiveView via `handle_message/4`
 
-## Love.View Exmaple
+## Love.View Example
 
 ```elixir
 defmodule MyAppWeb.ProfileIndexLive do
@@ -34,7 +32,6 @@ defmodule MyAppWeb.ProfileIndexLive do
     {:ok, put_state(socket, profiles: load_profiles())}
   end
 
-  @impl Love.View
   def handle_message(:on_show_details, {MyAppWeb.UserProfileComponent, _id}, profile_id, socket) do
     put_state(socket, detailed_profile_id: profile_id)
   end
@@ -52,7 +49,10 @@ defmodule MyAppWeb.ProfileIndexLive do
           module={MyAppWeb.UserProfileComponent}
           id={"profile-#{profile.id}"}
           profile={profile}
-          on_show_details={self()} />
+          on_show_details={self()}>
+
+          some content
+        </.live_component>
       <% end %>
     </div>
     """
@@ -82,7 +82,7 @@ defmodule MyAppWeb.UserProfileComponent do
 
   computed :age
 
-  slot :inner_block, required?: false
+  slot :inner_block
 
   event :on_show_details
 
@@ -112,19 +112,11 @@ The `:expand_details?` assign is **state** and has an initial value. It can be m
 
 The `:age` assign is **computed** and is set by `put_computed/2`.
 
-The `:inner_block` assign is a **required slot prop**. It can be made optional with the `required?: false` option.
+The `:inner_block` assign is a **slot prop**. It is optional but can be made required with the `required?: true` option.
 
 The `:on_expanded` assign is a **event prop**. Events raised via `emit/3` can be handled by any Love.View (coming soon) _or_ Love.Component that implements the universal `handle_message/4` callback. Pass in a pid to send a message to a Love.View, or `{module, id}` to send a message to a Love.Component.
 
 The `compute_age/1` function is a **reactive callback**. It is automatically evaluated whenever any of the assigns listed in the `@react to: ...` attribute have changed. The function can react to prop changes, state changes, and even _other_ reactive callbacks.
-
-## Gotchas
-
-### When overriding `mount/1` and `update/2`
-
-`Love.Component` implements the `LiveComponent.mount/1` and `update/2` callbacks. If your component needs to override either of these functions, you _must_ invoke `Love.Component.on_mount/2` and `on_update/2`, respectively, so that `Love.Component` can continue to hook into the component lifecycle to do its magic.
-
-`Love.View` does not have this same concern, because extends the LiveView via the built-in hook mechanism.
 
 ## Installation
 

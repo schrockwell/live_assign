@@ -3,6 +3,8 @@ defmodule Love.Internal do
 
   import Love.Config
 
+  alias Phoenix.LiveView
+
   @meta_fn_name :__love_component_meta__
   @socket_private_key :love_component
   @attrs %{
@@ -286,7 +288,7 @@ defmodule Love.Internal do
       socket_acc
       |> ensure_can_put_state!()
       |> validate_assign_key!(:state, key)
-      |> Phoenix.LiveView.assign(key, value)
+      |> LiveView.assign(key, value)
     end)
     |> update_reactive()
   end
@@ -294,7 +296,7 @@ defmodule Love.Internal do
   def put_computed(socket, key, value) do
     socket
     |> validate_assign_key!(:computed, key)
-    |> Phoenix.LiveView.assign(key, value)
+    |> LiveView.assign(key, value)
   end
 
   ##################################################
@@ -407,7 +409,7 @@ defmodule Love.Internal do
   defp list_all_triggers(socket) do
     for type <- [:prop, :state],
         {key, meta} <- get_meta(socket, type),
-        true == Phoenix.LiveView.changed?(socket, key),
+        true == LiveView.changed?(socket, key),
         reduce: MapSet.new() do
       acc -> MapSet.union(acc, MapSet.new(meta.triggers))
     end
@@ -483,11 +485,41 @@ defmodule Love.Internal do
   end
 
   ##################################################
+  # RUNTIME - LiveComponent.mount/1
+  ##################################################
+
+  def component_mount_hook(socket, module) do
+    socket =
+      socket
+      |> put_private(:module, module)
+      |> put_private(:assigns_validated?, false)
+
+    socket
+    |> LiveView.assign(initial_props(socket))
+    |> LiveView.assign(initial_state(socket))
+  end
+
+  ##################################################
   # RUNTIME - LiveComponent.update/2
   ##################################################
 
+  def component_update_hook(socket, %{__message__: %Love.Events.Message{} = message}) do
+    case live_view_module(socket).handle_message(
+           message.name,
+           message.source,
+           message.payload,
+           socket
+         ) do
+      %LiveView.Socket{} = socket ->
+        socket
+
+      _else ->
+        raise "expected handle_message/3 callback to return a %LiveView.Socket{}"
+    end
+  end
+
   if runtime_checks?() do
-    def on_component_update(socket, new_assigns) do
+    def component_update_hook(socket, new_assigns) do
       socket
       |> merge_props(new_assigns)
       |> ensure_assigns_present!(:prop)
@@ -495,7 +527,7 @@ defmodule Love.Internal do
       |> put_private(:assigns_validated?, true)
     end
   else
-    def on_component_update(socket, new_assigns) do
+    def component_update_hook(socket, new_assigns) do
       socket
       |> merge_props(new_assigns)
       |> update_reactive()
@@ -507,7 +539,7 @@ defmodule Love.Internal do
     Enum.reduce(new_assigns, socket, fn {key, value}, socket_acc ->
       socket_acc
       |> validate_assign_key!(:prop, key)
-      |> Phoenix.LiveView.assign(key, value)
+      |> LiveView.assign(key, value)
     end)
   end
 end

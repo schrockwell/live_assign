@@ -1,6 +1,12 @@
 defmodule Love.View do
   @moduledoc """
-  🔥 Rekindle your love for LiveViews.
+  Extend LiveViews.
+
+  Add `use Love.View` to a `Phoenix.LiveView`. This adds:
+
+  - `@behaviour Love.Events` for the optional `c:Love.Events.handle_message/4` callback
+  - `import Love.View` to make macros and functions locally available
+  -  Hooks into `mount` and `handle_info`
   """
 
   alias Love.Internal
@@ -50,36 +56,60 @@ defmodule Love.View do
   ##################################################
 
   @doc """
-  Defines a state field.
+  Defines a state assign.
 
-  The second arg is the initial value for this state field (defaults to `nil` if omitted).
+  State is internal to the view and is modified via `put_state/2`.
+
+  ## Options
+
+  - `:default` - optional; if specified, the state will be assigned the default value during mount.
+    The expression for the default value is wrapped in a function and its evaluation is deferred until runtime
+    at the moment the view is mounted. If not specified, you should `put_state/2` during view
+    initialization to set an initial value.
   """
+  @doc group: :fields
+  @spec state(key :: atom, opts :: keyword) :: nil
   defmacro state(key, quoted_opts \\ []) when is_atom(key) do
     Internal.define_state(__CALLER__, key, quoted_opts)
   end
 
   @doc """
-  Defines a state field.
+  Defines a computed assign.
 
-  The second arg is the initial value for this state field (defaults to `nil` if omitted).
+  Computed assigns are set via `put_computed/2` or `put_computed/3`. They are internal to the
+  view and are typically set inside reactive callbacks, although they can be updated at any
+  time in the view lifecycle. Computed assigns cannot trigger reactive callbacks.
   """
-  defmacro computed(key, quoted_opts \\ []) when is_atom(key) do
-    Internal.define_computed(__CALLER__, key, quoted_opts)
+  @doc group: :fields
+  @spec computed(key :: atom) :: nil
+  defmacro computed(key) when is_atom(key) do
+    Internal.define_computed(__CALLER__, key, [])
   end
 
   @doc """
-  Puts many state changes into the component.
+  Updates state assigns.
 
-  This will also immediately reevaluate any necessary reactive fields, so
-  call this as infrequently as possible (i.e. state changes should be batched).
+  This will immediately reevaluate reactive fields that depend on the changed state, so
+  call this function as infrequently as possible. In other words, try to batch state changes
+  and limit `put_state/2` calls to once per function.
+
+  This function cannot be called within a reactive callback. Doing so will raise a `RuntimeError`.
+  If you need to update an assign within a reactive callback, you must use a computed assign.
+
+  Returns the socket with the new state and after any reactive callbacks have run.
   """
+  @spec put_state(LiveView.Socket.t(), map | keyword) :: LiveView.Socket.t()
   def put_state(socket, changes) do
     Internal.put_state(socket, changes)
   end
 
   @doc """
-  Puts many computed values.
+  Updates computed assigns.
+
+  This can be called at any point in the view lifecycle.
   """
+  @spec put_computed(socket :: LiveView.Socket.t(), changes :: map | keyword) ::
+          LiveView.Socket.t()
   def put_computed(socket, changes) do
     Enum.reduce(changes, socket, fn {key, value}, socket_acc ->
       Internal.put_computed(socket_acc, key, value)
@@ -87,16 +117,15 @@ defmodule Love.View do
   end
 
   @doc """
-  Puts a computed value into the component.
+  Updates a computed assign.
+
+  This can be called at any point in the view lifecycle.
   """
+  @spec put_computed(socket :: LiveView.Socket.t(), key :: atom, value :: any) ::
+          LiveView.Socket.t()
   def put_computed(socket, key, value) do
     Internal.put_computed(socket, key, value)
   end
-
-  @doc """
-  Emits a predefined message.
-  """
-  defdelegate emit(socket, key, payload), to: Internal
 
   @doc false
   def on_mount(module, _params, _session, socket) do
@@ -108,9 +137,7 @@ defmodule Love.View do
     {:cont,
      socket
      |> LiveView.assign(Internal.initial_state(socket))
-     |> LiveView.attach_hook(:love_component_info, :handle_info, &handle_info_hook/2)}
-
-    # |> LiveView.attach_hook(:love_component_params, :handle_params, &handle_params_hook/3)
+     |> LiveView.attach_hook(:love_view_info, :handle_info, &handle_info_hook/2)}
   end
 
   defp handle_info_hook(%Love.Events.Message{} = message, socket) do
@@ -124,16 +151,4 @@ defmodule Love.View do
   end
 
   defp handle_info_hook(_message, socket), do: {:cont, socket}
-
-  # defp handle_params_hook(_params, _uri, socket) do
-  #   if Internal.get_private(socket, :assigns_validated?) do
-  #     {:cont, socket}
-  #   else
-  #     {:cont,
-  #      socket
-  #      |> Internal.ensure_assigns_present!(:state)
-  #      |> Internal.ensure_assigns_present!(:computed)
-  #      |> Internal.put_private(:assigns_validated?, true)}
-  #   end
-  # end
 end

@@ -1,6 +1,48 @@
 defmodule Love.Component do
   @moduledoc """
-  🔥 Rekindle your love for components.
+  Extend LiveComponents.
+
+  ## Usage
+
+  Add `use Love.Component` to a `Phoenix.LiveComponent`. This adds:
+
+  - `@behaviour Love.Events` for the optional `c:Love.Events.handle_message/4` callback
+  - `import Love.Component` to make macros and functions locally available
+  - `prop :id` to define the required `:id` prop assign
+  - `mount/1` and `update/2` default implementations - see `mount_hook/1` and `update_hook/2` for details
+    on overriding these
+
+  ## Love.Component Example
+
+      defmodule MyAppWeb.UserProfileComponent do
+        use Phoenix.LiveComponent
+        use Love.Component
+
+        prop :profile
+        prop :show_avatar?, default: false
+
+        state :expand_details?, default: false
+
+        computed :age
+
+        slot :inner_block
+
+        event :on_selected
+
+        def handle_event("toggle-details", _, socket) do
+          {:noreply, put_state(socket, socket, expand_details?: not socket.assigns.expand_details?)}
+        end
+
+        def handle_event("select", %{"profile_id" => profile_id}}, socket) do
+          {:noreply, emit(socket, :on_selected, profile_id)}
+        end
+
+        @react to: :profile
+        def compute_age(socket) do
+          age = trunc(Date.diff(Date.utc_today(), socket.assigns.profile.birthday) / 365)
+          put_computed(socket, age: age)
+        end
+      end
   """
 
   alias Love.Internal
@@ -23,11 +65,11 @@ defmodule Love.Component do
       prop :id
 
       def mount(socket) do
-        {:ok, Love.Component.on_mount(socket, __MODULE__)}
+        {:ok, Love.Component.mount_hook(socket, __MODULE__)}
       end
 
       def update(new_assigns, socket) do
-        {:ok, Love.Component.on_update(socket, new_assigns)}
+        {:ok, Love.Component.update_hook(socket, new_assigns)}
       end
 
       defoverridable mount: 1, update: 2
@@ -85,16 +127,16 @@ defmodule Love.Component do
 
   ## Options
 
-  - `:required?` - defaults to `true`; if not required, the slot has a default value of `[]`
+  - `:required?` - defaults to `false`, with a default value of `[]`
   """
   @doc group: :fields
   @spec slot(key :: atom, opts :: keyword) :: nil
   defmacro slot(key, opts \\ []) when is_atom(key) do
     prop_opts =
-      if opts[:required?] == false do
-        [default: []]
-      else
+      if opts[:required?] == true do
         []
+      else
+        [default: []]
       end
 
     Internal.define_prop(__CALLER__, key, prop_opts)
@@ -105,8 +147,11 @@ defmodule Love.Component do
 
   Event props are optional and default to `nil`.
 
-  The value of this prop must be a destination to receive the event, either a pid or `{module, id}`.
-  See `emit/3` for details on how to raise this event.
+  The value of this prop must be a destination to receive the event, either a PID or `{module, id}`.
+  See `emit/3` for details on raising events.
+
+  The emitted event name defaults to the name of the event prop. The event name can be overridden
+  by the parent specifying `{pid, :my_custom_event_name}` or `{module, id, :my_custom_event_name}`.
 
   ## Example
 
@@ -116,9 +161,9 @@ defmodule Love.Component do
       # => to handle it: handle_event(:on_selected, {module, id}, "some payload", socket)
   """
   @doc group: :fields
-  @spec event(key :: atom) :: nil
-  defmacro event(key) when is_atom(key) do
-    Internal.define_prop(__CALLER__, key, default: nil)
+  @spec event(name :: atom) :: nil
+  defmacro event(name) when is_atom(name) do
+    Internal.define_prop(__CALLER__, name, default: nil)
   end
 
   @doc """
@@ -149,7 +194,9 @@ defmodule Love.Component do
   ## Example
 
       prop :profile
+
       state :profile_params, default: %{}
+
       computed :changeset
 
       def handle_event("validate", %{"profile" => profile_params}, socket) do
@@ -225,27 +272,23 @@ defmodule Love.Component do
   This is not normally called directly, because it is automatically called via a default implementation
   of `mount/1` defined by `use Love.Component`.
 
-  If the component overrides the default implementation of `mount/1`, then `on_mount/2` must be invoked manually.
+  If the component overrides the default implementation of `mount/1`, then `mount_hook/1` must be invoked manually.
 
   ## Example
 
       def mount(socket) do
         {:ok,
          socket
-         |> Love.Component.on_mount(__MODULE__)
+         |> mount_hook()
          |> do_other_stuff()}
       end
   """
-  @spec on_mount(socket :: LiveView.Socket.t(), module :: module) :: LiveView.Socket.t()
-  def on_mount(socket, module) do
-    socket =
-      socket
-      |> Internal.put_private(:module, module)
-      |> Internal.put_private(:assigns_validated?, false)
 
-    socket
-    |> LiveView.assign(Internal.initial_props(socket))
-    |> LiveView.assign(Internal.initial_state(socket))
+  @spec mount_hook(socket :: LiveView.Socket.t()) :: LiveView.Socket.t()
+  defmacro mount_hook(socket) do
+    quote do
+      Internal.component_mount_hook(unquote(socket), __MODULE__)
+    end
   end
 
   @doc """
@@ -254,41 +297,28 @@ defmodule Love.Component do
   This is not normally called directly, because it is automatically called via a default implementation
   of `update/2` defined by `use Love.Component`.
 
-  If the component overrides the default implementation of `update/2`, then `on_update/2` must be invoked manually.
+  If the component overrides the default implementation of `update/2`, then `update_hook/2` must be invoked manually.
   The `is_message?/1` guard can be used to detect if `assigns` contains an event message that should be handled
   separately.
 
   ## Example
 
+      # Let Love.Component handle event messages internally
       def update(assigns, socket) when is_message?(assigns) do
-        {:ok, Love.Component.on_update(socket, assigns)}
+        {:ok, update_hook(socket, assigns)}
       end
 
+      # Merge in new props and then do something else
       def update(assigns, socket) do
         {:ok,
          socket
-         |> Love.Component.on_update(assigns)
+         |> update_hook(assigns)
          |> do_other_stuff()}
       end
   """
-  @spec on_update(socket :: LiveView.Socket.t(), assigns :: map) :: LiveView.Socket.t()
-  def on_update(socket, %{__message__: %Love.Events.Message{} = message}) do
-    case Internal.live_view_module(socket).handle_message(
-           message.name,
-           message.source,
-           message.payload,
-           socket
-         ) do
-      %LiveView.Socket{} = socket ->
-        socket
-
-      _else ->
-        raise "expected handle_message/3 callback to return a %Phoenix.LiveView.Socket{}"
-    end
-  end
-
-  def on_update(socket, new_assigns) do
-    Internal.on_component_update(socket, new_assigns)
+  @spec update_hook(socket :: LiveView.Socket.t(), assigns :: map) :: LiveView.Socket.t()
+  def update_hook(socket, new_assigns) do
+    Internal.component_update_hook(socket, new_assigns)
   end
 
   @doc """
