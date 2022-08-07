@@ -4,31 +4,9 @@ defmodule Love.ComponentTest do
   @endpoint LoveTest.Endpoint
 
   import LiveIsolatedComponent
+  import Love.TestModules
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
-
-  defmodule BaseComponent do
-    defmacro __using__(_) do
-      quote do
-        use Phoenix.LiveComponent
-        use Love.Component
-
-        def render(var!(assigns)), do: ~H"<div />"
-
-        defoverridable render: 1
-      end
-    end
-  end
-
-  defmacro defcomponent(name, do: quoted) do
-    quote do
-      defmodule unquote(name) do
-        use BaseComponent
-
-        unquote(quoted)
-      end
-    end
-  end
 
   setup do
     start_supervised!(@endpoint)

@@ -9,6 +9,7 @@ defmodule Love.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
+      elixirc_paths: elixirc_paths(Mix.env),
 
       # Hex
       description: description(),
@@ -52,4 +53,7 @@ defmodule Love.MixProject do
       extras: ["README.md"]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end

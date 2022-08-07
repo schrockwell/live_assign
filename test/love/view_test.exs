@@ -3,31 +3,9 @@ defmodule Love.ViewTest do
 
   @endpoint LoveTest.Endpoint
 
+  import Love.TestModules
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
-
-  defmodule BaseView do
-    defmacro __using__(_) do
-      quote do
-        use Phoenix.LiveView
-        use Love.View
-
-        def render(var!(assigns)), do: ~H""
-
-        defoverridable render: 1
-      end
-    end
-  end
-
-  defmacro defview(name, do: quoted) do
-    quote do
-      defmodule unquote(name) do
-        use BaseView
-
-        unquote(quoted)
-      end
-    end
-  end
 
   setup do
     start_supervised!(@endpoint)
@@ -63,6 +41,26 @@ defmodule Love.ViewTest do
       assert view |> has_element?("[data-age=34]")
       assert view |> has_element?("[data-double-age=68]")
       assert view |> has_element?("[data-name=Rockwell]")
+    end
+  end
+
+  describe "handle_message/4" do
+    test "can receive a message emitted to self() from a component" do
+      defview HandlMessageView do
+        state :handled?, default: false
+
+        def handle_message(:on_clicked, _sender, _payload, socket) do
+          socket
+        end
+
+        def render(assigns) do
+          ~H"""
+          <div>
+            <div data-handled={inspect(@handled?)} />
+          </div>
+          """
+        end
+      end
     end
   end
 end
