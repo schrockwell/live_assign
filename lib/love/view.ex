@@ -6,11 +6,6 @@ defmodule Love.View do
   alias Love.Internal
   alias Phoenix.LiveView
 
-  @callback handle_message(key :: atom, payload :: any, socket :: LiveView.Socket.t()) ::
-              socket :: LiveView.Socket.t()
-
-  @optional_callbacks handle_message: 3
-
   ##################################################
   # __using__/1
   ##################################################
@@ -19,7 +14,7 @@ defmodule Love.View do
     Internal.init_module_attributes(__CALLER__, [:prop, :react, :state, :computed, :defaults])
 
     quote do
-      @behaviour Love.View
+      @behaviour Love.Events
       @on_definition {Love.Internal, :on_definition}
       @before_compile Love.View
 
@@ -118,10 +113,10 @@ defmodule Love.View do
     # |> LiveView.attach_hook(:love_component_params, :handle_params, &handle_params_hook/3)
   end
 
-  defp handle_info_hook(%Love.Message{} = message, socket) do
+  defp handle_info_hook(%Love.Events.Message{} = message, socket) do
     {:halt,
      Internal.live_view_module(socket).handle_message(
-       message.key,
+       message.name,
        message.source,
        message.payload,
        socket

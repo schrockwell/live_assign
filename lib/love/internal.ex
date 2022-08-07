@@ -312,13 +312,13 @@ defmodule Love.Internal do
         nil
 
       {pid, custom_key} when is_pid(pid) ->
-        Love.send_message(pid, custom_key, payload, source: source)
+        Love.Events.send_message(pid, custom_key, payload, source: source)
 
       {module, id, custom_key} ->
-        Love.send_message({module, id}, custom_key, payload, source: source)
+        Love.Events.send_message({module, id}, custom_key, payload, source: source)
 
       destination ->
-        Love.send_message(destination, key, payload, source: source)
+        Love.Events.send_message(destination, key, payload, source: source)
     end
 
     socket

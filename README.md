@@ -122,7 +122,7 @@ The `compute_age/1` function is a **reactive callback**. It is automatically eva
 
 ### When overriding `mount/1` and `update/2`
 
-`Love.Component` implements the `LiveComponent.mount/1` and `update/2` callbacks. If your component needs to override either of these functions, you _must_ invoke `Love.Component.on_mount/1` and `on_update/2`, respectively, so that `Love.Component` can continue to hook into the component lifecycle to do its magic.
+`Love.Component` implements the `LiveComponent.mount/1` and `update/2` callbacks. If your component needs to override either of these functions, you _must_ invoke `Love.Component.on_mount/2` and `on_update/2`, respectively, so that `Love.Component` can continue to hook into the component lifecycle to do its magic.
 
 `Love.View` does not have this same concern, because extends the LiveView via the built-in hook mechanism.
 

@@ -9,7 +9,7 @@ defmodule Love.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
-      elixirc_paths: elixirc_paths(Mix.env),
+      elixirc_paths: elixirc_paths(Mix.env()),
 
       # Hex
       description: description(),
@@ -50,7 +50,11 @@ defmodule Love.MixProject do
 
   defp docs do
     [
-      extras: ["README.md"]
+      extras: ["README.md"],
+      groups_for_functions: [
+        {"Field Definitions", &(&1[:group] == :fields)},
+        {"Guards", &(&1[:group] == :guards)}
+      ]
     ]
   end
 

@@ -272,7 +272,7 @@ defmodule Love.ComponentTest do
 
       view |> element("button") |> render_click()
 
-      assert_received %Love.Message{key: :on_clicked, payload: :hoopy}
+      assert_received %Love.Events.Message{name: :on_clicked, payload: :hoopy}
     end
 
     test "can send a message to a component" do
@@ -288,6 +288,14 @@ defmodule Love.ComponentTest do
 
       defcomponent ReceiveMessageComponent do
         state :received?, default: false
+
+        # def update(assigns, socket) when is_message(assigns) do
+        #   {:ok, Love.Component.on_update(socket, assigns)}
+        # end
+
+        # def update(assigns, socket) do
+        #   {:ok, socket |> Love.Component.on_update(assigns)}
+        # end
 
         def handle_message(:on_clicked, {SendMessageComponent, "sender"}, :hoopy, socket) do
           put_state(socket, received?: true)
