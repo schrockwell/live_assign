@@ -1,24 +1,79 @@
-# 💕 Love.Component 💕
+# 💕 Love.View and Love.Component 💕
 
-Fall in love with LiveComponents all over again.
+## Fall in love all over again.
 
-Love.Component provides functionality on top of Phoenix.LiveComponent to improve developer ergonomics through a few simple conventions.
+Love provides functionality on top of Phoenix LiveView to improve developer ergonomics through a few simple conventions.
 
-- Explicit assign **definitions** in three different buckets:
-  - **Props** are passed in to the component and are never updated internally
-  - **State** is managed entirely by the component
-  - **Computed** values are derived entirely from other values
-- Universal **events** that can handled by LiveViews and LiveComponents using the exact same `handle_message/3` callback
-- Simple **reactivity** so that computed values and other side-effects are automatically invoked when component state changes
-- **Runtime checks** to ensure that everything you define has been assigned, and nothing you haven't defined isn't
+LiveView and LiveComponent _both_ gain:
 
-## Example
+- **State** assigns which can trigger reactive functions
+- **Reactive functions** that are automatically invoked upon state changes
+- **Computed** assigns which are purely derived from other state
+- **Universal event handling** via the `handle_message/4` callback
+- **Runtime checks** with developer-friendly error messages
+
+LiveComponents also gain additional functionality:
+
+- **Prop** assigns which are strictly passed in to the component and never modified internally
+- **Slot** props
+- **Event** props to represent events that can be raised by the component and universally handled by either a LiveComponent OR LiveView via `handle_message/4`
+
+## Love.View Exmaple
 
 ```elixir
-defmodule MyAppWeb.UserProfileComponent
+defmodule MyAppWeb.ProfileIndexLive do
+  use Phoenix.LiveView
+  use Love.View
+
+  state :profiles
+  state :detailed_profile_id, default: nil
+
+  computed :profile_count
+
+  def mount(_, _, socket) do
+    {:ok, put_state(socket, profiles: load_profiles())}
+  end
+
+  @impl Love.View
+  def handle_message(:on_show_details, {MyAppWeb.UserProfileComponent, _id}, profile_id, socket) do
+    put_state(socket, detailed_profile_id: profile_id)
+  end
+
+  @react to: :profiles
+  def compute_profile_count(socket) do
+    put_computed(socket, profile_count: length(socket.assigns.profiles))
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div>
+      <%= for profile <- @profiles do %>
+        <.live_component
+          module={MyAppWeb.UserProfileComponent}
+          id={"profile-#{profile.id}"}
+          profile={profile}
+          on_show_details={self()} />
+      <% end %>
+    </div>
+    """
+  end
+end
+```
+
+The `:profiles` and `detailed_profile_id` assigns are **state**. They can be modified throughout the LiveView lifecycle, and reactive functions can respond to their changes.
+
+The `:profile_count` is a **computed** assign because it is derived purely from other state.
+
+The `handle_message/4` callback is part of the `Love.View` behaviour. It's handling the event emitted by `UserProfileComponent`, which is wired up via its `:on_show_details` event prop (see below).
+
+The `compute_profile_count/1` callback is a **reactive function** that is automatically invoked as soon as any changes occur to the `:profiles` state.
+
+## Love.Component Example
+
+```elixir
+defmodule MyAppWeb.UserProfileComponent do
   use Phoenix.LiveComponent
   use Love.Component
-  import Love.Component
 
   prop :profile
   prop :show_avatar?, default: false
@@ -27,17 +82,16 @@ defmodule MyAppWeb.UserProfileComponent
 
   computed :age
 
-  slot :inner_block
+  slot :inner_block, required?: false
 
-  event :on_expanded
+  event :on_show_details
 
-  def handle_click("toggle-details", _, socket) do
-    expanded? = not socket.assigns.expand_details?
+  def handle_event("toggle-details", _, socket) do
+    {:noreply, put_state(socket, socket, expand_details?: not socket.assigns.expand_details?)}
+  end
 
-    {:noreply,
-     socket
-     |> emit(:on_expanded, expanded?)
-     |> put_state(expand_details?: expanded?)}
+  def handle_event("show-details", %{"profile_id" => profile_id}}, socket) do
+    {:noreply, emit(socket, :on_show_details, profile_id)}
   end
 
   @react to: :profile
@@ -56,7 +110,7 @@ The `:show_avatar?` assign is an **optional prop** that defaults to `false` when
 
 The `:expand_details?` assign is **state** and has an initial value. It can be modified via `put_state/2`.
 
-The `:age` assign is **computed** and is set by `put_computed/2`. If we forget to set it, a helpful runtime error will occur.
+The `:age` assign is **computed** and is set by `put_computed/2`.
 
 The `:inner_block` assign is a **required slot prop**. It can be made optional with the `required?: false` option.
 
@@ -66,9 +120,11 @@ The `compute_age/1` function is a **reactive callback**. It is automatically eva
 
 ## Gotchas
 
-### Call `super` when overriding `mount/1` and `update/2`
+### When overriding `mount/1` and `update/2`
 
-Love.Component implements the LiveComponent `mount/1` and `update/2` callbacks. If your component needs to override either of these functions, `super/{1,2}` _must_ be invoked so that Love.Component can continue to work its magic.
+`Love.Component` implements the `LiveComponent.mount/1` and `update/2` callbacks. If your component needs to override either of these functions, you _must_ invoke `Love.Component.on_mount/1` and `on_update/2`, respectively, so that `Love.Component` can continue to hook into the component lifecycle to do its magic.
+
+`Love.View` does not have this same concern, because extends the LiveView via the built-in hook mechanism.
 
 ## Installation
 

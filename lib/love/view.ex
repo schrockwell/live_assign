@@ -120,7 +120,12 @@ defmodule Love.View do
 
   defp handle_info_hook(%Love.Message{} = message, socket) do
     {:halt,
-     Internal.live_view_module(socket).handle_message(message.key, message.payload, socket)}
+     Internal.live_view_module(socket).handle_message(
+       message.key,
+       message.source,
+       message.payload,
+       socket
+     )}
   end
 
   defp handle_info_hook(_message, socket), do: {:cont, socket}

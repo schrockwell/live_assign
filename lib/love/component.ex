@@ -152,7 +152,7 @@ defmodule Love.Component do
   @doc """
   Emits a predefined message.
   """
-  defdelegate emit(socket, key, payload), to: Internal
+  defdelegate emit(socket, key, payload \\ nil), to: Internal
 
   @doc """
   TODO: Document me.
@@ -188,15 +188,5 @@ defmodule Love.Component do
 
   def on_update(socket, new_assigns) do
     Internal.on_component_update(socket, new_assigns)
-  end
-
-  if Application.compile_env(:my_app, :enable_some_thing?) do
-    def foo do
-      :enabled
-    end
-  else
-    def foo do
-      :disabled
-    end
   end
 end
