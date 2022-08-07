@@ -3,7 +3,7 @@ defmodule Love.Component do
   🔥 Rekindle your love for components.
   """
 
-  alias Love.Common
+  alias Love.Internal
   alias Phoenix.LiveView
 
   @callback handle_message(key :: atom, payload :: any, socket :: LiveView.Socket.t()) ::
@@ -16,11 +16,11 @@ defmodule Love.Component do
   ##################################################
 
   defmacro __using__(_opts) do
-    Common.init_attrs(__CALLER__, [:react, :prop, :state, :computed, :defaults])
+    Internal.init_module_attributes(__CALLER__, [:react, :prop, :state, :computed, :defaults])
 
     quote do
       @behaviour Love.Component
-      @on_definition {Love.Common, :on_definition}
+      @on_definition {Love.Internal, :on_definition}
       @before_compile Love.Component
 
       import Love.Component
@@ -45,18 +45,18 @@ defmodule Love.Component do
 
   defmacro __before_compile__(env) do
     # Evaluate quoted opts and turn them into more useful structures
-    Common.before_compile_eval_metas(env, [:prop, :state, :computed])
+    Internal.before_compile_eval_metas(env, [:prop, :state, :computed])
 
     # Add the :triggers fields, so we know what to reevaluate when a field changes
-    Common.before_compile_put_meta_triggers(env.module, [:prop, :state])
+    Internal.before_compile_put_meta_triggers(env.module, [:prop, :state])
 
     # TODO: Check for cycles in reactive values
 
     # Delay these function definitions until as late as possible, so we can ensure the attributes
     # are fully set up (i.e. wait for __on_definition__/6 to evaluate first!)
     [
-      Common.before_compile_define_meta_fns(__CALLER__, [:prop, :state, :computed, :react]),
-      Common.define_defaults(env.module)
+      Internal.before_compile_define_meta_fns(__CALLER__, [:prop, :state, :computed, :react]),
+      Internal.define_defaults(env.module)
     ]
   end
 
@@ -74,7 +74,7 @@ defmodule Love.Component do
     will be optional)
   """
   defmacro prop(key, quoted_opts \\ []) when is_atom(key) do
-    Common.define_prop(__CALLER__, key, quoted_opts)
+    Internal.define_prop(__CALLER__, key, quoted_opts)
   end
 
   @doc """
@@ -83,14 +83,14 @@ defmodule Love.Component do
   Takes the same arguments as `prop/2`.
   """
   defmacro slot(key, quoted_opts \\ []) when is_atom(key) do
-    Common.define_prop(__CALLER__, key, quoted_opts)
+    Internal.define_prop(__CALLER__, key, quoted_opts)
   end
 
   @doc """
   Defines a message prop.
   """
   defmacro message(key) when is_atom(key) do
-    Common.define_prop(__CALLER__, key, [])
+    Internal.define_prop(__CALLER__, key, [])
   end
 
   @doc """
@@ -99,7 +99,7 @@ defmodule Love.Component do
   The second arg is the initial value for this state field (defaults to `nil` if omitted).
   """
   defmacro state(key, quoted_opts \\ []) when is_atom(key) do
-    Common.define_state(__CALLER__, key, quoted_opts)
+    Internal.define_state(__CALLER__, key, quoted_opts)
   end
 
   @doc """
@@ -108,7 +108,7 @@ defmodule Love.Component do
   The second arg is the initial value for this state field (defaults to `nil` if omitted).
   """
   defmacro computed(key, quoted_opts \\ []) when is_atom(key) do
-    Common.define_computed(__CALLER__, key, quoted_opts)
+    Internal.define_computed(__CALLER__, key, quoted_opts)
   end
 
   @doc """
@@ -118,7 +118,7 @@ defmodule Love.Component do
   call this as infrequently as possible (i.e. state changes should be batched).
   """
   def put_state(socket, changes) do
-    Common.put_state!(socket, changes)
+    Internal.put_state(socket, changes)
   end
 
   @doc """
@@ -126,7 +126,7 @@ defmodule Love.Component do
   """
   def put_computed(socket, changes) do
     Enum.reduce(changes, socket, fn {key, value}, socket_acc ->
-      Common.put_computed!(socket_acc, key, value)
+      Internal.put_computed(socket_acc, key, value)
     end)
   end
 
@@ -134,29 +134,33 @@ defmodule Love.Component do
   Puts a computed value into the component.
   """
   def put_computed(socket, key, value) do
-    Common.put_computed!(socket, key, value)
+    Internal.put_computed(socket, key, value)
   end
 
   @doc """
   Emits a predefined message.
   """
-  defdelegate emit(socket, key, payload), to: Common
+  defdelegate emit(socket, key, payload), to: Internal
 
-  @doc false
+  @doc """
+  TODO: Document me.
+  """
   def on_mount(socket, module) do
     socket =
       socket
-      |> Common.put_private(:module, module)
-      |> Common.put_private(:assigns_validated?, false)
+      |> Internal.put_private(:module, module)
+      |> Internal.put_private(:assigns_validated?, false)
 
     socket
-    |> LiveView.assign(Common.initial_props(socket))
-    |> LiveView.assign(Common.initial_state(socket))
+    |> LiveView.assign(Internal.initial_props(socket))
+    |> LiveView.assign(Internal.initial_state(socket))
   end
 
-  @doc false
+  @doc """
+  TODO: Document me.
+  """
   def on_update(socket, %{__message__: %Love.Message{} = message}) do
-    case Common.live_view_module(socket).handle_message(message.key, message.payload, socket) do
+    case Internal.live_view_module(socket).handle_message(message.key, message.payload, socket) do
       %LiveView.Socket{} = socket ->
         socket
 
@@ -166,12 +170,16 @@ defmodule Love.Component do
   end
 
   def on_update(socket, new_assigns) do
-    socket
-    |> Common.merge_props(new_assigns)
-    |> Common.ensure_assigns_present!(:prop)
-    |> Common.update_reactive()
-    |> Common.ensure_assigns_present!(:state)
-    |> Common.ensure_assigns_present!(:computed)
-    |> Common.put_private(:assigns_validated?, true)
+    Internal.on_component_update(socket, new_assigns)
+  end
+
+  if Application.compile_env(:my_app, :enable_some_thing?) do
+    def foo do
+      :enabled
+    end
+  else
+    def foo do
+      :disabled
+    end
   end
 end

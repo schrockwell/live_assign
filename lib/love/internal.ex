@@ -1,5 +1,7 @@
-defmodule Love.Common do
+defmodule Love.Internal do
   @moduledoc false
+
+  import Love.Config
 
   @meta_fn_name :__love_component_meta__
   @socket_private_key :love_component
@@ -11,19 +13,29 @@ defmodule Love.Common do
     defaults: :__field_defaults__
   }
 
-  def init_attrs(env, types) do
+  ##################################################
+  # COMPILE TIME - MODULE ATTRIBUTES
+  ##################################################
+
+  def init_module_attributes(env, types) do
     for type <- types do
       Module.put_attribute(env.module, @attrs[type], %{})
     end
   end
 
+  # Little helper to update module attributes
+  defp update_attribute(module, key, default \\ nil, updater) do
+    new_value = updater.(Module.get_attribute(module, key, default))
+    Module.put_attribute(module, key, new_value)
+  end
+
   ##################################################
-  # __on_definition__/6
+  # COMPILE TIME - __on_definition__/6
   ##################################################
 
   # Capture the @react function attribute into a module attribute
   def on_definition(env, :def, name, _args, _guards, _body) do
-    validate_not_defined!(env.module, :react, name)
+    ensure_not_already_defined!(env.module, :react, name)
 
     if react_attr = Module.get_attribute(env.module, :react) do
       update_attribute(env.module, @attrs.react, fn map ->
@@ -52,11 +64,11 @@ defmodule Love.Common do
   end
 
   ##################################################
-  # PUBLIC API
+  # COMPILE-TIME - PUBLIC API
   ##################################################
 
   def define_prop(env, key, quoted_opts) when is_atom(key) do
-    validate_not_defined!(env.module, :prop, key)
+    ensure_not_already_defined!(env.module, :prop, key)
 
     update_attribute(env.module, @attrs.prop, fn props ->
       Map.put(props, key, quoted_opts)
@@ -68,7 +80,7 @@ defmodule Love.Common do
   end
 
   def define_state(env, key, quoted_opts) when is_atom(key) do
-    validate_not_defined!(env.module, :state, key)
+    ensure_not_already_defined!(env.module, :state, key)
 
     update_attribute(env.module, @attrs.state, fn state ->
       Map.put(state, key, quoted_opts)
@@ -80,7 +92,7 @@ defmodule Love.Common do
   end
 
   def define_computed(env, key, quoted_opts) when is_atom(key) do
-    validate_not_defined!(env.module, :computed, key)
+    ensure_not_already_defined!(env.module, :computed, key)
 
     update_attribute(env.module, @attrs.computed, fn state ->
       Map.put(state, key, quoted_opts)
@@ -105,7 +117,7 @@ defmodule Love.Common do
     end
   end
 
-  defp validate_not_defined!(module, type, key) do
+  defp ensure_not_already_defined!(module, type, key) do
     [:computed, :prop, :react, :state]
     |> Enum.find(fn type ->
       key in (module |> Module.get_attribute(@attrs[type], %{}) |> Map.keys())
@@ -129,14 +141,8 @@ defmodule Love.Common do
   defp friendly_name(:react), do: "a reactive function"
   defp friendly_name(:state), do: "state"
 
-  # Little helper to update module attributes
-  def update_attribute(module, key, default \\ nil, updater) do
-    new_value = updater.(Module.get_attribute(module, key, default))
-    Module.put_attribute(module, key, new_value)
-  end
-
   ##################################################
-  # __before_compile__/1
+  # COMPILE-TIME - __before_compile__/1
   ##################################################
 
   # Assigns :triggers to state and prop field metadata
@@ -220,6 +226,10 @@ defmodule Love.Common do
     end
   end
 
+  ##################################################
+  # RUNTIME - GET METADATA
+  ##################################################
+
   ### Fetching module metadata
 
   # Returns metadata compiled into the socket module.
@@ -232,7 +242,7 @@ defmodule Love.Common do
   end
 
   ##################################################
-  # PRIVATE
+  # RUNTIME - PRIVATE SOCKET VALUES
   ##################################################
 
   ### Manipulation of :private field in LiveView.Socket
@@ -266,70 +276,30 @@ defmodule Love.Common do
     get_private(socket, :module)
   end
 
-  @doc """
-  Assigns props from update/2
-  """
-  def merge_props(socket, new_assigns) do
-    Enum.reduce(new_assigns, socket, fn {key, value}, socket_acc ->
-      put_prop!(socket_acc, key, value)
-    end)
-  end
+  ##################################################
+  # RUNTIME - UPDATING ASSIGNS
+  ##################################################
 
-  @doc """
-  Recomputes only the necessary fields, based on pending prop and state changes.
-  """
-  def update_reactive(socket) do
-    triggers = list_all_triggers(socket)
-
-    socket
-    |> start_reactive_transaction()
-    |> ensure_all_triggered(triggers)
-    |> commit_reactive_transaction()
-  end
-
-  def ensure_can_put_computed!(socket) do
-    if can_put_computed?(socket) do
-      socket
-    else
-      raise "put_computed/3 is only permitted in reactive functions"
-    end
-  end
-
-  def ensure_can_put_state!(socket) do
-    if can_put_state?(socket) do
-      socket
-    else
-      raise "put_state/2 is only permitted outside of reactive functions"
-    end
-  end
-
-  def put_state!(socket, changes) do
+  def put_state(socket, changes) do
     changes
     |> Enum.reduce(socket, fn {key, value}, socket_acc ->
-      put_state!(socket_acc, key, value)
+      socket_acc
+      |> ensure_can_put_state!()
+      |> validate_assign_key!(:state, key)
+      |> Phoenix.LiveView.assign(key, value)
     end)
     |> update_reactive()
   end
 
-  def put_state!(socket, key, value) do
+  def put_computed(socket, key, value) do
     socket
-    |> ensure_can_put_state!()
-    |> validate_assign_key!(:state, key)
-    |> Phoenix.LiveView.assign(key, value)
-  end
-
-  def put_computed!(socket, key, value) do
-    socket
-    |> ensure_can_put_computed!()
     |> validate_assign_key!(:computed, key)
     |> Phoenix.LiveView.assign(key, value)
   end
 
-  defp put_prop!(socket, key, value) do
-    socket
-    |> validate_assign_key!(:prop, key)
-    |> Phoenix.LiveView.assign(key, value)
-  end
+  ##################################################
+  # RUNTIME - EVENTS AND MESSAGING
+  ##################################################
 
   @doc """
   Emit a message.
@@ -352,7 +322,9 @@ defmodule Love.Common do
     socket
   end
 
-  ### Initialization of assigns
+  ##################################################
+  # RUNTIME - ASSIGN INITIALIZATION
+  ##################################################
 
   # Returns a map of initial state fields based on their default values, to be
   # called during mount/1.
@@ -376,57 +348,57 @@ defmodule Love.Common do
     end)
   end
 
-  ### Runtime checks on prop, state, and computed fields
+  if runtime_checks?() do
+    defp ensure_assigns_present!(socket, type) do
+      # Only run checks on initial update/2
+      unless get_private(socket, :assigns_validated?) do
+        socket
+        |> get_meta(type)
+        |> Enum.each(fn {key, _meta} ->
+          if Map.has_key?(socket.assigns, key) do
+            socket
+          else
+            raise "expected #{type} #{inspect(key)} to be assigned"
+          end
+        end)
+      end
 
-  def ensure_assigns_present!(socket, type) do
-    # Only run checks on initial update/2
-    unless get_private(socket, :assigns_validated?) do
       socket
-      |> get_meta(type)
-      |> Enum.each(fn {key, _meta} ->
-        ensure_assign_present!(socket, type, key)
-      end)
     end
+
+    defp ensure_can_put_state!(socket) do
+      unless get_private(socket, :in_transaction?, false) do
+        socket
+      else
+        raise "put_state/2 is only permitted outside of @react functions"
+      end
+    end
+
+    defp validate_assign_key!(socket, type, key) do
+      if Map.has_key?(get_meta(socket, type), key) do
+        socket
+      else
+        raise "attempted to set #{type} #{inspect(key)}, but is not defined; expected one of: #{inspect(Map.keys(get_meta(socket, type)))}"
+      end
+    end
+  else
+    defp ensure_can_put_state!(socket), do: socket
+    defp validate_assign_key!(socket, _type, _key), do: socket
+  end
+
+  ##################################################
+  # RUNTIME - REACTIVITIY
+  ##################################################
+
+  # Recomputes only the necessary fields, based on pending prop and state changes.
+  defp update_reactive(socket) do
+    triggers = list_all_triggers(socket)
 
     socket
+    |> start_reactive_transaction()
+    |> ensure_all_triggered(triggers)
+    |> commit_reactive_transaction()
   end
-
-  # Ensures that a required prop has been assigned.
-  defp ensure_assign_present!(socket, :prop, key) do
-    if Map.has_key?(socket.assigns, key) do
-      socket
-    else
-      raise "expected required prop #{inspect(key)} to be assigned"
-    end
-  end
-
-  defp ensure_assign_present!(socket, :state, key) do
-    if Map.has_key?(socket.assigns, key) do
-      socket
-    else
-      raise "expected state #{inspect(key)} to be assigned"
-    end
-
-    socket
-  end
-
-  defp ensure_assign_present!(socket, :computed, key) do
-    if Map.has_key?(socket.assigns, key) do
-      socket
-    else
-      raise "expected computed key #{inspect(key)} to be assigned"
-    end
-  end
-
-  defp validate_assign_key!(socket, type, key) do
-    if Map.has_key?(get_meta(socket, type), key) do
-      socket
-    else
-      raise "attempted to set #{type} #{inspect(key)}, but is not defined; expected one of: #{inspect(Map.keys(get_meta(socket, type)))}"
-    end
-  end
-
-  ### Enumerating reactive functions to trigger
 
   # Returns a flat list of all reactive functions that need to be reevaluated at this current
   # update cycle. This is based purely on which data sources (props and state) have changed
@@ -438,6 +410,18 @@ defmodule Love.Common do
       acc -> MapSet.union(acc, MapSet.new(meta.triggers))
     end
     |> MapSet.to_list()
+  end
+
+  defp start_reactive_transaction(socket) do
+    socket
+    |> put_private(:in_transaction?, true)
+    |> put_private(:triggered, %{})
+  end
+
+  defp commit_reactive_transaction(socket) do
+    socket
+    |> put_private(:in_transaction?, false)
+    |> put_private(:triggered, %{})
   end
 
   ### Calling reactive triggers
@@ -472,7 +456,7 @@ defmodule Love.Common do
       # Finally, we can actually evaluate the function and flag it as triggered
       module
       |> apply(key, [new_socket])
-      |> flag_triggered(key)
+      |> flag_as_triggered(key)
     end
   end
 
@@ -490,34 +474,38 @@ defmodule Love.Common do
     |> Map.has_key?(key)
   end
 
-  defp flag_triggered(socket, key) do
+  defp flag_as_triggered(socket, key) do
     update_private(socket, :triggered, fn triggered ->
       Map.put(triggered, key, true)
     end)
   end
 
-  ### Reactive lifecycle
+  ##################################################
+  # RUNTIME - LiveComponent.update/2
+  ##################################################
 
-  defp can_put_computed?(_socket) do
-    # Disabling this check for now... I think it is okay if we allow put_computed anywhere,
-    # since nothing reacts to computed changes
-    # get_private(socket, :in_transaction?, false)
-    true
+  if runtime_checks?() do
+    def on_component_update(socket, new_assigns) do
+      socket
+      |> merge_props(new_assigns)
+      |> ensure_assigns_present!(:prop)
+      |> update_reactive()
+      |> put_private(:assigns_validated?, true)
+    end
+  else
+    def on_component_update(socket, new_assigns) do
+      socket
+      |> merge_props(new_assigns)
+      |> update_reactive()
+    end
   end
 
-  defp can_put_state?(socket) do
-    not get_private(socket, :in_transaction?, false)
-  end
-
-  defp start_reactive_transaction(socket) do
-    socket
-    |> put_private(:in_transaction?, true)
-    |> put_private(:triggered, %{})
-  end
-
-  defp commit_reactive_transaction(socket) do
-    socket
-    |> put_private(:in_transaction?, false)
-    |> put_private(:triggered, %{})
+  # Assigns props from update/2
+  defp merge_props(socket, new_assigns) do
+    Enum.reduce(new_assigns, socket, fn {key, value}, socket_acc ->
+      socket_acc
+      |> validate_assign_key!(:prop, key)
+      |> Phoenix.LiveView.assign(key, value)
+    end)
   end
 end
