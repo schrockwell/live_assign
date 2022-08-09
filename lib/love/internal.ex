@@ -37,9 +37,9 @@ defmodule Love.Internal do
 
   # Capture the @react function attribute into a module attribute
   def on_definition(env, :def, name, _args, _guards, _body) do
-    ensure_not_already_defined!(env.module, :react, name)
-
     if react_attr = Module.get_attribute(env.module, :react) do
+      ensure_not_already_defined!(env.module, :react, name)
+
       update_attribute(env.module, @attrs.react, fn map ->
         Map.put(map, name, react_meta(react_attr))
       end)

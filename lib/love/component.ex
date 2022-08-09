@@ -65,7 +65,7 @@ defmodule Love.Component do
       prop :id
 
       def mount(socket) do
-        {:ok, Love.Component.mount_hook(socket, __MODULE__)}
+        {:ok, Love.Component.mount_hook(socket)}
       end
 
       def update(new_assigns, socket) do
