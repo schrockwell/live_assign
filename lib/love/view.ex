@@ -21,8 +21,9 @@ defmodule Love.View do
 
     quote do
       @behaviour Love.Events
-      @on_definition {Love.Internal, :on_definition}
       @before_compile Love.View
+
+      use Love.React
 
       import Love.View
 
@@ -41,14 +42,11 @@ defmodule Love.View do
     # Add the :triggers fields, so we know what to reevaluate when a field changes
     Internal.before_compile_put_meta_triggers(env.module, [:state])
 
-    # TODO: Check for cycles in reactive values
-
     # Delay these function definitions until as late as possible, so we can ensure the attributes
     # are fully set up (i.e. wait for __on_definition__/6 to evaluate first!)
     [
-      Internal.before_compile_define_meta_fns(__CALLER__, [:prop, :state, :react]),
-      Internal.define_defaults(env.module),
-      Internal.before_compile_define_react_wrappers(env)
+      Internal.before_compile_define_meta_fns(env, [:prop, :state]),
+      Internal.define_defaults(env.module)
     ]
   end
 

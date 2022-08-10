@@ -86,8 +86,6 @@ defmodule Love.Component do
     # Add the :triggers fields, so we know what to reevaluate when a field changes
     Internal.before_compile_put_meta_triggers(env.module, [:prop, :state])
 
-    # TODO: Check for cycles in reactive values
-
     # Delay these function definitions until as late as possible, so we can ensure the attributes
     # are fully set up (i.e. wait for __on_definition__/6 to evaluate first!)
     [
