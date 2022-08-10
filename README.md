@@ -105,7 +105,7 @@ The `:show_avatar?` assign is an **optional prop** that defaults to `false` when
 
 The `:expand_details?` and `:age` assigns are **state**. They can be modified via `put_state/2`.
 
-The `:inner_block` assign is a **slot prop**. It is optional but can be made required with the `required?: true` option.
+The `:inner_block` assign is a **slot prop**. It is required but can be made optional with the `required?: false` option.
 
 The `:on_expanded` assign is a **event prop**. Events raised via `emit/3` can be handled by any Love.View (coming soon) _or_ Love.Component that implements the universal `handle_message/4` callback. Pass in a pid to send a message to a Love.View, or `{module, id}` to send a message to a Love.Component.
 

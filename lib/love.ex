@@ -47,7 +47,7 @@ defmodule Love do
   indicates a possible infinite loop of reactive callbacks, and a RuntimeError will result. This check
   can be bypassed with the `repeats?: true` option on the `@react` attribute.
 
-  See [the example below](#updating-state-via-reactive-functions) for usage.
+  See [the example below](#module-updating-state-via-reactive-functions) for usage.
 
   ## Event Messages
 

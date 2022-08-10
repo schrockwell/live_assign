@@ -156,16 +156,16 @@ defmodule Love.Component do
 
   ## Options
 
-  - `:required?` - defaults to `false`, with a default value of `[]`
+  - `:required?` - defaults to `true`. When `false`, the prop given the empty slot value of `[]`
   """
   @doc group: :fields
   @spec slot(key :: atom, opts :: keyword) :: nil
   defmacro slot(key, opts \\ []) when is_atom(key) do
     prop_opts =
-      if opts[:required?] == true do
-        []
-      else
+      if opts[:required?] == false do
         [default: []]
+      else
+        []
       end
 
     Internal.define_prop(__CALLER__, key, prop_opts)
@@ -216,12 +216,13 @@ defmodule Love.Component do
   @doc """
   Updates state assigns.
 
-  When called outside of a reactive function, any reacgive functions that depend on the changed
+  When called outside of a reactive function, any reactive functions that depend on the changed
   state will be immediately evaluated, so call this function as infrequently as possible. In
-  other words, try to batch state changes and limit `put_state/2` calls to once per function.
+  other words, try to batch state changes and limit `put_state/2` calls to once per lifecycle event.
 
-  Within a reactive function, any state changes that might trigger another reactive function will
-  be deferred until the current reactive function completely finishes executing.
+  Calls to `put_state/2` within a reactive function do not commit the state changes until
+  after the current reactive function completely finishes executing, at which point another
+  batch of reactive functions may execute.
 
   Returns the socket with the new state and after any reactive callbacks have run.
   """
