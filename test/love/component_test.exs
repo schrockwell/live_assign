@@ -169,8 +169,6 @@ defmodule Love.ComponentTest do
         state :the_answer
 
         def mount(socket) do
-          {:ok, socket} = super(socket)
-
           {:ok, put_state(socket, the_answer: 42)}
         end
 
@@ -187,8 +185,6 @@ defmodule Love.ComponentTest do
         state :the_answer, default: 42
 
         def mount(socket) do
-          {:ok, socket} = super(socket)
-
           {:ok,
            put_state(socket, the_question: "How many angels can dance on the head of a pin?")}
         end
@@ -209,8 +205,6 @@ defmodule Love.ComponentTest do
         state :the_answer, default: 42
 
         def mount(socket) do
-          {:ok, socket} = super(socket)
-
           {:ok, put_state(socket, improbability: 9000)}
         end
 
@@ -322,6 +316,10 @@ defmodule Love.ComponentTest do
         state :thing_a, default: :a
         state :thing_b
         state :thing_c
+
+        def mount(socket) do
+          {:ok, socket}
+        end
 
         def handle_event("click", _, socket) do
           {:noreply, put_state(socket, thing_a: :a)}

@@ -9,8 +9,7 @@ defmodule Love.Component do
   - `@behaviour Love.Events` for the optional `c:Love.Events.handle_message/4` callback
   - `import Love.Component` to make macros and functions locally available
   - `prop :id` to define the required `:id` prop assign
-  - `mount/1` and `update/2` default implementations - see `mount_hook/1` and `update_hook/2` for details
-    on overriding these
+  - `mount/1` and `update/2` default implementations (that you can safely override)
 
   ## Love.Component Example
 
@@ -62,16 +61,6 @@ defmodule Love.Component do
       import Love.Component
 
       prop :id
-
-      def mount(socket) do
-        {:ok, Love.Component.mount_hook(socket)}
-      end
-
-      def update(new_assigns, socket) do
-        {:ok, Love.Component.update_hook(socket, new_assigns)}
-      end
-
-      defoverridable mount: 1, update: 2
     end
   end
 
@@ -91,8 +80,50 @@ defmodule Love.Component do
     [
       Internal.before_compile_define_meta_fns(env, [:prop, :state, :react]),
       Internal.define_defaults(env.module),
-      Internal.before_compile_define_react_wrappers(env)
+      Internal.before_compile_define_react_wrappers(env),
+      wrap_mount(env),
+      wrap_update(env)
     ]
+  end
+
+  # Learned this technique here:
+  # https://github.com/surface-ui/surface/blob/a93cfa753cb5bb7155981f4328bb64d01fa5e579/lib/surface/live_view.ex#L77-L104
+  defp wrap_mount(env) do
+    if Module.defines?(env.module, {:mount, 1}) do
+      quote do
+        defoverridable mount: 1
+
+        def mount(socket) do
+          socket = Internal.component_mount_hook(socket, __MODULE__)
+          super(socket)
+        end
+      end
+    else
+      quote do
+        def mount(socket) do
+          {:ok, Internal.component_mount_hook(socket, __MODULE__)}
+        end
+      end
+    end
+  end
+
+  defp wrap_update(env) do
+    if Module.defines?(env.module, {:update, 2}) do
+      quote do
+        defoverridable update: 2
+
+        def update(assigns, socket) do
+          socket = Internal.component_update_hook(socket, assigns)
+          super(assigns, socket)
+        end
+      end
+    else
+      quote do
+        def update(assigns, socket) do
+          {:ok, Internal.component_update_hook(socket, assigns)}
+        end
+      end
+    end
   end
 
   ##################################################
@@ -207,61 +238,6 @@ defmodule Love.Component do
   """
   @spec emit(LiveView.Socket.t(), name :: atom, payload :: any) :: LiveView.Socket.t()
   defdelegate emit(socket, name, payload \\ nil), to: Internal
-
-  @doc """
-  Hooks into the `LiveComponent` mount.
-
-  This is not normally called directly, because it is automatically called via a default implementation
-  of `mount/1` defined by `use Love.Component`.
-
-  If the component overrides the default implementation of `mount/1`, then `mount_hook/1` must be invoked manually.
-
-  ## Example
-
-      def mount(socket) do
-        {:ok,
-         socket
-         |> mount_hook()
-         |> do_other_stuff()}
-      end
-  """
-
-  @spec mount_hook(socket :: LiveView.Socket.t()) :: LiveView.Socket.t()
-  defmacro mount_hook(socket) do
-    quote do
-      Internal.component_mount_hook(unquote(socket), __MODULE__)
-    end
-  end
-
-  @doc """
-  Hooks into the `LiveComponent` update.
-
-  This is not normally called directly, because it is automatically called via a default implementation
-  of `update/2` defined by `use Love.Component`.
-
-  If the component overrides the default implementation of `update/2`, then `update_hook/2` must be invoked manually.
-  The `is_message?/1` guard can be used to detect if `assigns` contains an event message that should be handled
-  separately.
-
-  ## Example
-
-      # Let Love.Component handle event messages internally
-      def update(assigns, socket) when is_message?(assigns) do
-        {:ok, update_hook(socket, assigns)}
-      end
-
-      # Merge in new props and then do something else
-      def update(assigns, socket) do
-        {:ok,
-         socket
-         |> update_hook(assigns)
-         |> do_other_stuff()}
-      end
-  """
-  @spec update_hook(socket :: LiveView.Socket.t(), assigns :: map) :: LiveView.Socket.t()
-  def update_hook(socket, new_assigns) do
-    Internal.component_update_hook(socket, new_assigns)
-  end
 
   @doc """
   Checks if an `assigns` argument passed to `update/2` contains an event message.
