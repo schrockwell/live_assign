@@ -65,24 +65,38 @@ defmodule Love.View do
     The expression for the default value is wrapped in a function and its evaluation is deferred until runtime
     at the moment the view is mounted. If not specified, you should `put_state/2` during view
     initialization to set an initial value.
+
+  ## Example
+
+      # State with no initial value
+      state :changeset
+
+      # State with an initial value, evaluated during mount
+      state :now, default: DateTime.utc_now()
   """
   @doc group: :fields
   @spec state(key :: atom, opts :: keyword) :: nil
-  defmacro state(key, quoted_opts \\ []) when is_atom(key) do
-    Internal.define_state(__CALLER__, key, quoted_opts)
+  defmacro state(key, opts \\ []) when is_atom(key) do
+    Internal.define_state(__CALLER__, key, opts)
   end
 
   @doc """
   Updates state assigns.
 
-  When called outside of a reactive function, any reacgive functions that depend on the changed
+  When called outside of a reactive function, any reactive functions that depend on the changed
   state will be immediately evaluated, so call this function as infrequently as possible. In
   other words, try to batch state changes and limit `put_state/2` calls to once per function.
 
-  Within a reactive function, any state changes that might trigger another reactive function will
-  be deferred until the current reactive function completely finishes executing.
+  Within a reactive function, any additionally-triggered reactive functions will
+  be deferred until after the current reactive function completely executes.
 
   Returns the socket with the new state and after any reactive callbacks have run.
+
+  ## Example
+
+      state :first_name
+
+      put_state(socket, first_name: "Marvin")
   """
   @spec put_state(LiveView.Socket.t(), map | keyword) :: LiveView.Socket.t()
   def put_state(socket, changes) do

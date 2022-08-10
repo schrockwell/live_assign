@@ -9,7 +9,7 @@ defmodule Love.Component do
   - `@behaviour Love.Events` for the optional `c:Love.Events.handle_message/4` callback
   - `import Love.Component` to make macros and functions locally available
   - `prop :id` to define the required `:id` prop assign
-  - `mount/1` and `update/2` default implementations (that you can safely override)
+  - `mount/1` and `update/2` default implementations (can safely overriden)
 
   ## Love.Component Example
 
@@ -131,12 +131,10 @@ defmodule Love.Component do
   ##################################################
 
   @doc """
-  Defines a component prop field.
+  Defines a prop.
 
-  > #### Note {: .info}
-  >
-  > `prop :id` is automatically defined as a required prop for all components that `use Love.Component`,
-  > because every stateful `LiveComponent` requires an `:id`.
+  `prop :id` is automatically defined as a required prop for all components that `use Love.Component`,
+  because every stateful `LiveComponent` requires an `:id`.
 
   ## Options
 
@@ -144,6 +142,14 @@ defmodule Love.Component do
     value during mount. If not specified, the prop is considered required. `nil` is a valid default value. The
     expression for the default value is wrapped in a function and its evaluation is deferred until runtime
     at the moment the component is mounted.
+
+  ## Example
+
+      # A required prop
+      prop :visible?
+
+      # An optional prop
+      prop :thumbnail_url, default: nil
   """
   @doc group: :fields
   @spec prop(key :: atom, opts :: keyword) :: nil
@@ -157,6 +163,14 @@ defmodule Love.Component do
   ## Options
 
   - `:required?` - defaults to `true`. When `false`, the prop given the empty slot value of `[]`
+
+  ## Example
+
+      # Default slot name
+      slot :inner_block
+
+      # Optional slot
+      slot :navbar, required?: false
   """
   @doc group: :fields
   @spec slot(key :: atom, opts :: keyword) :: nil
@@ -172,9 +186,9 @@ defmodule Love.Component do
   end
 
   @doc """
-  Defines a event prop.
+  Defines an event prop.
 
-  Event props are optional and default to `nil`.
+  Event props are always optional, and default to `nil`.
 
   The value of this prop must be a destination to receive the event, either a PID or `{module, id}`.
   See `emit/3` for details on raising events.
@@ -186,8 +200,11 @@ defmodule Love.Component do
 
       event :on_selected
 
-      # => to raise it: emit(socket, :on_selected, "some payload")
-      # => to handle it: handle_event(:on_selected, {module, id}, "some payload", socket)
+      # To raise it:
+      emit(socket, :on_selected, "some payload")
+
+      # To handle it:
+      handle_event(:on_selected, {module, id}, "some payload", socket)
   """
   @doc group: :fields
   @spec event(name :: atom) :: nil
@@ -206,6 +223,14 @@ defmodule Love.Component do
     The expression for the default value is wrapped in a function and its evaluation is deferred until runtime
     at the moment the component is mounted. If not specified, you should `put_state/2` during component
     initialization to set an initial value.
+
+  ## Example
+
+      # State with no initial value
+      state :changeset
+
+      # State with an initial value, evaluated during mount
+      state :now, default: DateTime.utc_now()
   """
   @doc group: :fields
   @spec state(key :: atom, opts :: keyword) :: nil
@@ -220,11 +245,16 @@ defmodule Love.Component do
   state will be immediately evaluated, so call this function as infrequently as possible. In
   other words, try to batch state changes and limit `put_state/2` calls to once per lifecycle event.
 
-  Calls to `put_state/2` within a reactive function do not commit the state changes until
-  after the current reactive function completely finishes executing, at which point another
-  batch of reactive functions may execute.
+  Within a reactive function, any additionally-triggered reactive functions will
+  be deferred until after the current reactive function completely executes.
 
   Returns the socket with the new state and after any reactive callbacks have run.
+
+  ## Example
+
+      state :first_name
+
+      put_state(socket, first_name: "Marvin")
   """
   @spec put_state(LiveView.Socket.t(), map | keyword) :: LiveView.Socket.t()
   def put_state(socket, changes) do
@@ -239,11 +269,4 @@ defmodule Love.Component do
   """
   @spec emit(LiveView.Socket.t(), name :: atom, payload :: any) :: LiveView.Socket.t()
   defdelegate emit(socket, name, payload \\ nil), to: Internal
-
-  @doc """
-  Checks if an `assigns` argument passed to `update/2` contains an event message.
-  """
-  @doc group: :guards
-  @spec is_message?(assigns :: map) :: boolean
-  defguard is_message?(assigns) when assigns.__message__.__struct__ == Love.Events.Message
 end

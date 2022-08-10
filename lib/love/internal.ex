@@ -278,23 +278,29 @@ defmodule Love.Internal do
     changes = Enum.into(changes, %{})
 
     if get_private(socket, :inner_transaction?, false) do
-      update_private(socket, :pending_state_changes, &Map.merge(&1, changes))
+      socket
+      |> assign_state(changes)
+      |> update_private(:pending_state_changes, &Map.merge(&1, changes))
     else
-      commit_state(socket, changes)
+      assign_state_and_react(socket, changes)
     end
   end
 
-  defp commit_state(socket, changes, opts \\ [])
-
-  defp commit_state(socket, changes, _opts) when changes == %{}, do: socket
-
-  defp commit_state(socket, changes, opts) do
-    changes
-    |> Enum.reduce(socket, fn {key, value}, socket_acc ->
+  defp assign_state(socket, assigns) do
+    Enum.reduce(assigns, socket, fn {key, value}, socket_acc ->
       socket_acc
       |> validate_assign_key!(:state, key)
       |> LiveView.assign(key, value)
     end)
+  end
+
+  defp assign_state_and_react(socket, changes, opts \\ [])
+
+  defp assign_state_and_react(socket, changes, _opts) when changes == %{}, do: socket
+
+  defp assign_state_and_react(socket, changes, opts) do
+    socket
+    |> assign_state(changes)
     |> update_reactive(Map.keys(changes), opts)
   end
 
@@ -445,7 +451,7 @@ defmodule Love.Internal do
     socket
     |> put_private(:inner_transaction?, false)
     |> put_private(:inner_triggered, %{})
-    |> commit_state(get_private(socket, :pending_state_changes), check_for_loops?: true)
+    |> assign_state_and_react(get_private(socket, :pending_state_changes), check_for_loops?: true)
   end
 
   ### Calling reactive triggers
