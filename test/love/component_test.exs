@@ -21,18 +21,17 @@ defmodule Love.ComponentTest do
       slot :inner_block
       slot :whatever, required?: false
 
+      state :age
       state :details_expanded?, default: false
-
-      computed :age
 
       def handle_click("toggle-details", _, socket) do
         {:noreply, put_state(socket, details_expanded?: not socket.assigns.details_expanded?)}
       end
 
       @react to: :profile
-      def compute_age(socket) do
+      def put_age(socket) do
         age = trunc(Date.diff(Date.utc_today(), socket.assigns.profile.birthday) / 365)
-        put_computed(socket, age: age)
+        put_state(socket, age: age)
       end
 
       def render(assigns) do

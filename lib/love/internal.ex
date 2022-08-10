@@ -11,7 +11,6 @@ defmodule Love.Internal do
     react: :__reactive_fields__,
     prop: :__prop_fields__,
     state: :__state_fields__,
-    computed: :__computed_fields__,
     defaults: :__field_defaults__
   }
 
@@ -94,16 +93,6 @@ defmodule Love.Internal do
     nil
   end
 
-  def define_computed(env, key, quoted_opts) when is_atom(key) do
-    ensure_not_already_defined!(env.module, :computed, key)
-
-    update_attribute(env.module, @attrs.computed, fn state ->
-      Map.put(state, key, quoted_opts)
-    end)
-
-    nil
-  end
-
   defp put_quoted_default(module, key, quoted_default) do
     update_attribute(module, @attrs.defaults, fn defaults ->
       Map.put(defaults, key, quoted_default)
@@ -121,7 +110,7 @@ defmodule Love.Internal do
   end
 
   defp ensure_not_already_defined!(module, type, key) do
-    [:computed, :prop, :react, :state]
+    [:prop, :react, :state]
     |> Enum.find(fn type ->
       key in (module |> Module.get_attribute(@attrs[type], %{}) |> Map.keys())
     end)
@@ -139,7 +128,6 @@ defmodule Love.Internal do
     end
   end
 
-  defp friendly_name(:computed), do: "computed"
   defp friendly_name(:prop), do: "a prop"
   defp friendly_name(:react), do: "a reactive function"
   defp friendly_name(:state), do: "state"
@@ -206,11 +194,6 @@ defmodule Love.Internal do
     %{
       initialize?: Keyword.has_key?(quoted_opts, :default)
     }
-  end
-
-  # Returns metadata map for a computed field
-  defp eval_meta(_quoted_opts, :computed, _env) do
-    %{}
   end
 
   def before_compile_define_meta_fns(env, keys) do
@@ -301,12 +284,6 @@ defmodule Love.Internal do
       |> LiveView.assign(key, value)
     end)
     |> update_reactive(Map.keys(changes), opts)
-  end
-
-  def put_computed(socket, key, value) do
-    socket
-    |> validate_assign_key!(:computed, key)
-    |> LiveView.assign(key, value)
   end
 
   ##################################################

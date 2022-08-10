@@ -33,29 +33,17 @@ defmodule Love do
 
   See `Love.Component.state/2` and `Love.View.state/2` for details.
 
-  ## Computed
-
-  _Supported by `Love.View` and `Love.Component`._
-
-  Computed assigns represent data that is entirely derived from other state. They are typically
-  updated in reactive callbacks, but may be updated at any time.
-
-  See `Love.Component.computed/1` and `Love.View.computed/1` for details.
-
   ## Reactive Functions
 
   _Supported by `Love.View` and `Love.Component`._
 
   Reactive functions are regular functions tagged with the `@react` attribute. They can be triggered
-  by changes to props, state, or other reactive functions.
+  by changes to props or state.
 
   Reactive functions are triggered immediately when new prop values are assigned to the component,
   or when `put_state/2` is called.
 
-  The only permitted way to update component assigns within a reactive function is via `put_computed/2`
-  and `put_computed/3`. `put_state/2` cannot be called within a reactive function.
-
-  See [the example below](#module-setting-computed-assigns-via-reactive-functions) for usage.
+  See [the example below](#updating-state-via-reactive-functions) for usage.
 
   ## Event Messages
 
@@ -82,30 +70,29 @@ defmodule Love do
 
   ## Examples
 
-  ### Setting computed assigns via reactive functions
+  ### Updating state via reactive functions
 
       prop :first_name
       prop :last_name
 
+      state :big_display_name
+      state :display_name
       state :full_name?, default: false
-
-      computed :display_name
-      computed :big_display_name
 
       # Triggered when there are any changes to these props or state
       @react to: [:first_name, :last_name, :full_name?]
-      def compute_display_name(socket) do
+      def put_display_name(socket) do
         if socket.assigns.full_name? do
-          put_computed(socket, display_name: "\#{socket.assigns.first_name, socket.assigns.last_name}")
+          put_state(socket, display_name: "\#{socket.assigns.first_name, socket.assigns.last_name}")
         else
-          put_computed(socket, display_name: socket.assigns.first_name)
+          put_state(socket, display_name: socket.assigns.first_name)
         end
       end
 
-      # Triggered after compute_display_name/1 finishes
-      @react to: :compute_display_name
-      def compute_big_display_name(socket) do
-        put_computed(socket, big_display_name: String.upcase(socket.assigns.display_name))
+      # Triggered after put_display_name/1 finishes
+      @react to: :display_name
+      def put_big_display_name(socket) do
+        put_state(socket, big_display_name: String.upcase(socket.assigns.display_name))
       end
   """
 end

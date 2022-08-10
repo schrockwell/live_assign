@@ -6,7 +6,6 @@ LiveView and LiveComponent _both_ gain:
 
 - **State** assigns which can trigger reactive functions
 - **Reactive functions** that are automatically invoked upon state changes
-- **Computed** assigns which are purely derived from other state
 - **Universal event handling** via the `handle_message/4` callback on a LiveView or LiveComponent
 - **Runtime checks** with developer-friendly error messages
 
@@ -23,10 +22,9 @@ defmodule MyAppWeb.ProfileIndexLive do
   use Phoenix.LiveView
   use Love.View
 
-  state :profiles
+  state :profiles, default: []
+  state :profile_count, default: 0
   state :detailed_profile_id, default: nil
-
-  computed :profile_count
 
   def mount(_, _, socket) do
     {:ok, put_state(socket, profiles: load_profiles())}
@@ -37,8 +35,8 @@ defmodule MyAppWeb.ProfileIndexLive do
   end
 
   @react to: :profiles
-  def compute_profile_count(socket) do
-    put_computed(socket, profile_count: length(socket.assigns.profiles))
+  def put_profile_count(socket) do
+    put_state(socket, profile_count: length(socket.assigns.profiles))
   end
 
   def render(assigns) do
@@ -60,13 +58,11 @@ defmodule MyAppWeb.ProfileIndexLive do
 end
 ```
 
-The `:profiles` and `detailed_profile_id` assigns are **state**. They can be modified throughout the LiveView lifecycle, and reactive functions can respond to their changes.
-
-The `:profile_count` is a **computed** assign because it is derived purely from other state.
+The `:profiles`, `:profile_count`, and `detailed_profile_id` assigns are **state**. They can be modified throughout the LiveView lifecycle, and reactive functions can respond to their changes.
 
 The `handle_message/4` callback is part of the `Love.View` behaviour. It's handling the event emitted by `UserProfileComponent`, which is wired up via its `:on_show_details` event prop (see below).
 
-The `compute_profile_count/1` callback is a **reactive function** that is automatically invoked as soon as any changes occur to the `:profiles` state.
+The `put_profile_count/1` callback is a **reactive function** that is automatically invoked as soon as any changes occur to the `:profiles` state.
 
 ## Love.Component Example
 
@@ -78,9 +74,8 @@ defmodule MyAppWeb.UserProfileComponent do
   prop :profile
   prop :show_avatar?, default: false
 
+  state :age
   state :expand_details?, default: false
-
-  computed :age
 
   slot :inner_block
 
@@ -95,9 +90,9 @@ defmodule MyAppWeb.UserProfileComponent do
   end
 
   @react to: :profile
-  def compute_age(socket) do
+  def put_age(socket) do
     age = trunc(Date.diff(Date.utc_today(), socket.assigns.profile.birthday) / 365)
-    put_computed(socket, age: age)
+    put_state(socket, age: age)
   end
 end
 ```
@@ -108,15 +103,13 @@ The `:id` assign is also a required prop, but it is implicitly defined by `use L
 
 The `:show_avatar?` assign is an **optional prop** that defaults to `false` when unspecified.
 
-The `:expand_details?` assign is **state** and has an initial value. It can be modified via `put_state/2`.
-
-The `:age` assign is **computed** and is set by `put_computed/2`.
+The `:expand_details?` and `:age` assigns are **state**. They can be modified via `put_state/2`.
 
 The `:inner_block` assign is a **slot prop**. It is optional but can be made required with the `required?: true` option.
 
 The `:on_expanded` assign is a **event prop**. Events raised via `emit/3` can be handled by any Love.View (coming soon) _or_ Love.Component that implements the universal `handle_message/4` callback. Pass in a pid to send a message to a Love.View, or `{module, id}` to send a message to a Love.Component.
 
-The `compute_age/1` function is a **reactive callback**. It is automatically evaluated whenever any of the assigns listed in the `@react to: ...` attribute have changed. The function can react to prop changes, state changes, and even _other_ reactive callbacks.
+The `put_age/1` function is a **reactive callback**. It is automatically evaluated whenever the value of the `:profiles` state changes. The function can react to prop changes and state changes.
 
 ## Installation
 

@@ -7,7 +7,6 @@
     prop: 2,
     state: 1,
     state: 2,
-    computed: 1,
     slot: 1,
     slot: 2,
     event: 1
@@ -18,7 +17,6 @@
       prop: 2,
       state: 1,
       state: 2,
-      computed: 1,
       slot: 1,
       slot: 2,
       event: 1

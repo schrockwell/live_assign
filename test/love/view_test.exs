@@ -17,8 +17,7 @@ defmodule Love.ViewTest do
       defview LoveViewTest do
         state :name, default: "Rockwell"
         state :age
-
-        computed :double_age
+        state :double_age
 
         def mount(_, _, socket) do
           {:ok, put_state(socket, age: 34)}
@@ -31,8 +30,8 @@ defmodule Love.ViewTest do
         end
 
         @react to: :age
-        def compute_double_age(socket) do
-          put_computed(socket, double_age: socket.assigns.age * 2)
+        def put_double_age(socket) do
+          put_state(socket, double_age: socket.assigns.age * 2)
         end
       end
 
