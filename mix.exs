@@ -54,7 +54,8 @@ defmodule Love.MixProject do
       groups_for_functions: [
         {"Field Definitions", &(&1[:group] == :fields)},
         {"Guards", &(&1[:group] == :guards)}
-      ]
+      ],
+      main: "Love"
     ]
   end
 
