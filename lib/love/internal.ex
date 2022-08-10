@@ -56,7 +56,8 @@ defmodule Love.Internal do
   # Returns a map of metadata for a @react field
   defp react_meta(react_attr) do
     %{
-      react_to: List.flatten([Keyword.get(react_attr, :to, [])])
+      react_to: List.flatten([Keyword.get(react_attr, :to, [])]),
+      repeats?: Keyword.get(react_attr, :repeats?, false)
     }
   end
 
@@ -283,14 +284,27 @@ defmodule Love.Internal do
   ##################################################
 
   def put_state(socket, changes) do
+    changes = Enum.into(changes, %{})
+
+    if get_private(socket, :inner_transaction?, false) do
+      update_private(socket, :pending_state_changes, &Map.merge(&1, changes))
+    else
+      commit_state(socket, changes)
+    end
+  end
+
+  defp commit_state(socket, changes, opts \\ [])
+
+  defp commit_state(socket, changes, _opts) when changes == %{}, do: socket
+
+  defp commit_state(socket, changes, opts) do
     changes
     |> Enum.reduce(socket, fn {key, value}, socket_acc ->
       socket_acc
-      |> ensure_can_put_state!()
       |> validate_assign_key!(:state, key)
       |> LiveView.assign(key, value)
     end)
-    |> update_reactive()
+    |> update_reactive(Map.keys(changes), opts)
   end
 
   def put_computed(socket, key, value) do
@@ -370,14 +384,6 @@ defmodule Love.Internal do
       socket
     end
 
-    defp ensure_can_put_state!(socket) do
-      unless get_private(socket, :in_transaction?, false) do
-        socket
-      else
-        raise "put_state/2 is only permitted outside of @react functions"
-      end
-    end
-
     defp validate_assign_key!(socket, type, key) do
       if Map.has_key?(get_meta(socket, type), key) do
         socket
@@ -386,7 +392,6 @@ defmodule Love.Internal do
       end
     end
   else
-    defp ensure_can_put_state!(socket), do: socket
     defp validate_assign_key!(socket, _type, _key), do: socket
   end
 
@@ -395,37 +400,67 @@ defmodule Love.Internal do
   ##################################################
 
   # Recomputes only the necessary fields, based on pending prop and state changes.
-  defp update_reactive(socket) do
-    triggers = list_all_triggers(socket)
+  defp update_reactive(socket, keys_changed, opts \\ []) do
+    reacts = list_all_reacts_triggered_by(socket, keys_changed)
+    check_for_loops? = Keyword.get(opts, :check_for_loops?, false)
 
     socket
+    |> check_for_loops!(check_for_loops?, reacts)
     |> start_reactive_transaction()
-    |> ensure_all_triggered(triggers)
+    |> ensure_all_triggered(reacts)
     |> commit_reactive_transaction()
   end
 
   # Returns a flat list of all reactive functions that need to be reevaluated at this current
   # update cycle. This is based purely on which data sources (props and state) have changed
-  defp list_all_triggers(socket) do
+  defp list_all_reacts_triggered_by(socket, keys) do
     for type <- [:prop, :state],
         {key, meta} <- get_meta(socket, type),
-        true == LiveView.changed?(socket, key),
+        key in keys,
         reduce: MapSet.new() do
       acc -> MapSet.union(acc, MapSet.new(meta.triggers))
     end
-    |> MapSet.to_list()
+  end
+
+  if runtime_checks?() do
+    defp check_for_loops!(socket, true, reacts) do
+      reacts_triggered = get_private(socket, :reacts_triggered)
+
+      for react <- reacts do
+        meta = get_meta(socket, :react)[react]
+
+        if not meta.repeats? and MapSet.member?(reacts_triggered, react) do
+          raise """
+          reactive function #{react}/1 was triggered multiple times within a single update cycle, \
+          indicating a possible infinite loop. Disable this protection with \
+          `@react to: #{inspect(meta.react_to)}, repeats?: true`\
+          """
+        end
+      end
+
+      put_private(socket, :reacts_triggered, MapSet.union(reacts_triggered, MapSet.new(reacts)))
+    end
+
+    # Reset back to zero on intiial put_state/2
+    defp check_for_loops!(socket, false, _reacts) do
+      put_private(socket, :reacts_triggered, MapSet.new())
+    end
+  else
+    defp check_for_loops!(socket, _enable, _reacts), do: socket
   end
 
   defp start_reactive_transaction(socket) do
     socket
-    |> put_private(:in_transaction?, true)
-    |> put_private(:triggered, %{})
+    |> put_private(:inner_transaction?, true)
+    |> put_private(:inner_triggered, %{})
+    |> put_private(:pending_state_changes, %{})
   end
 
   defp commit_reactive_transaction(socket) do
     socket
-    |> put_private(:in_transaction?, false)
-    |> put_private(:triggered, %{})
+    |> put_private(:inner_transaction?, false)
+    |> put_private(:inner_triggered, %{})
+    |> commit_state(get_private(socket, :pending_state_changes), check_for_loops?: true)
   end
 
   ### Calling reactive triggers
@@ -450,36 +485,21 @@ defmodule Love.Internal do
     else
       module = live_view_module(socket)
 
-      # Recursion alert! Ensure that all the reactive functions that we care about
-      # are fully reevaluated before trying to evaluate this field
-      reactive_meta = get_meta(module, :react)[key]
-
-      new_socket =
-        ensure_all_triggered(socket, filter_reactive_names(socket, reactive_meta.react_to))
-
-      # Finally, we can actually evaluate the function and flag it as triggered
+      # Now we can actually evaluate the function and flag it as triggered
       module
-      |> apply(key, [new_socket])
+      |> apply(key, [socket])
       |> flag_as_triggered(key)
     end
   end
 
-  defp filter_reactive_names(socket, react_to) do
-    reactive_meta = get_meta(socket, :react)
-
-    Enum.filter(react_to, fn rt ->
-      Map.has_key?(reactive_meta, rt)
-    end)
-  end
-
   defp was_triggered?(socket, key) do
     socket
-    |> get_private(:triggered)
+    |> get_private(:inner_triggered)
     |> Map.has_key?(key)
   end
 
   defp flag_as_triggered(socket, key) do
-    update_private(socket, :triggered, fn triggered ->
+    update_private(socket, :inner_triggered, fn triggered ->
       Map.put(triggered, key, true)
     end)
   end
@@ -494,9 +514,11 @@ defmodule Love.Internal do
       |> put_private(:module, module)
       |> put_private(:assigns_validated?, false)
 
+    initial_assigns = Map.merge(initial_props(socket), initial_state(socket))
+
     socket
-    |> LiveView.assign(initial_props(socket))
-    |> LiveView.assign(initial_state(socket))
+    |> LiveView.assign(initial_assigns)
+    |> update_reactive(Map.keys(initial_assigns))
   end
 
   ##################################################
@@ -523,14 +545,14 @@ defmodule Love.Internal do
       socket
       |> merge_props(new_assigns)
       |> ensure_assigns_present!(:prop)
-      |> update_reactive()
+      |> update_reactive(Map.keys(new_assigns))
       |> put_private(:assigns_validated?, true)
     end
   else
     def component_update_hook(socket, new_assigns) do
       socket
       |> merge_props(new_assigns)
-      |> update_reactive()
+      |> update_reactive(Map.keys(new_assigns))
     end
   end
 

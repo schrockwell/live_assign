@@ -154,7 +154,7 @@ defmodule Love.ComponentTest do
 
   describe "state" do
     test "can be defined with a default value" do
-      defcomponent DetaultStateTest do
+      defcomponent(DetaultStateTest) do
         state :the_answer, default: 42
 
         def render(assigns), do: ~H"<div data-value={@the_answer} />"
@@ -163,20 +163,6 @@ defmodule Love.ComponentTest do
       {:ok, view, _html} = live_isolated_component(DetaultStateTest, assigns: %{})
 
       assert view |> has_element?("[data-value=42]")
-    end
-
-    @tag :skip
-    test "raises a RuntimeError if required state is not initialized" do
-      defcomponent RequiredStateTest do
-        state :the_answer
-      end
-
-      error =
-        assert_raise(RuntimeError, fn ->
-          live_isolated_component(RequiredStateTest, assigns: %{})
-        end)
-
-      assert error.message == "expected state :the_answer to be assigned"
     end
 
     test "can be initialized during mount" do
@@ -328,6 +314,138 @@ defmodule Love.ComponentTest do
       view |> element("button") |> render_click()
 
       assert view |> has_element?("[data-received=true]")
+    end
+  end
+
+  describe "reactive functions" do
+    test "can chain state changes" do
+      defcomponent ChainedStateTest do
+        state :thing_a, default: :a
+        state :thing_b
+        state :thing_c
+
+        def handle_event("click", _, socket) do
+          {:noreply, put_state(socket, thing_a: :a)}
+        end
+
+        @react to: :thing_a
+        def put_thing_b(socket) do
+          put_state(socket, thing_b: :b)
+        end
+
+        @react to: :thing_b
+        def put_thing_c(socket) do
+          put_state(socket, thing_c: :c)
+        end
+
+        def render(assigns) do
+          ~H"""
+          <div>
+            <div data-thing-a={@thing_a} />
+            <div data-thing-b={@thing_b} />
+            <div data-thing-c={@thing_c} />
+            <button phx-click="click" phx-target={@myself} />
+          </div>
+          """
+        end
+      end
+
+      {:ok, view, _html} = live_isolated_component(ChainedStateTest, assigns: %{})
+
+      assert view |> has_element?("[data-thing-a=a]")
+      assert view |> has_element?("[data-thing-b=b]")
+      assert view |> has_element?("[data-thing-c=c]")
+    end
+
+    test "detct an infinite update loop" do
+      defcomponent InfiniteUpdateLoopTest do
+        state :thing_a, default: :a
+        state :thing_b
+
+        def handle_event("click", _, socket) do
+          {:noreply, put_state(socket, thing_a: :a)}
+        end
+
+        @react to: :thing_a
+        def put_thing_b(socket) do
+          put_state(socket, thing_b: :b)
+        end
+
+        @react to: :thing_b
+        def put_thing_a(socket) do
+          put_state(socket, thing_a: :a)
+        end
+      end
+
+      error =
+        assert_raise RuntimeError, fn ->
+          live_isolated_component(InfiniteUpdateLoopTest, assigns: %{})
+        end
+
+      assert error.message ==
+               "reactive function put_thing_a/1 was triggered multiple times within a single update cycle, indicating a possible infinite loop. Disable this protection with `@react to: [:thing_b], repeats?: true`"
+    end
+
+    test "can be triggered multiple times" do
+      defcomponent ManyTriggersTest do
+        state :counter, default: 0
+        state :tens_counter
+
+        def handle_event("click", _, socket) do
+          {:noreply, put_state(socket, counter: socket.assigns.counter + 1)}
+        end
+
+        @react to: :counter
+        def put_tens_counter(socket) do
+          put_state(socket, tens_counter: socket.assigns.counter * 10)
+        end
+
+        def render(assigns) do
+          ~H"""
+          <div>
+            <div data-counter={@counter} />
+            <div data-tens-counter={@tens_counter} />
+            <button phx-click="click" phx-target={@myself} />
+          </div>
+          """
+        end
+      end
+
+      {:ok, view, _html} = live_isolated_component(ManyTriggersTest, assigns: %{})
+
+      assert view |> has_element?("[data-counter=0]")
+      assert view |> has_element?("[data-tens-counter=0]")
+
+      view |> element("button") |> render_click()
+
+      assert view |> has_element?("[data-counter=1]")
+      assert view |> has_element?("[data-tens-counter=10]")
+
+      view |> element("button") |> render_click()
+
+      assert view |> has_element?("[data-counter=2]")
+      assert view |> has_element?("[data-tens-counter=20]")
+    end
+
+    test "can disable infinite update loop detection" do
+      defcomponent DisableInfiniteLoopCheckTest do
+        state :counter, default: 10
+
+        @react to: :counter, repeats?: true
+        def decrement(socket) do
+          if socket.assigns.counter > 0 do
+            put_state(socket, counter: socket.assigns.counter - 1)
+          else
+            socket
+          end
+        end
+
+        def render(assigns), do: ~H[<div data-counter={@counter} />]
+      end
+
+      {:ok, view, _html} = live_isolated_component(DisableInfiniteLoopCheckTest, assigns: %{})
+
+      assert view |> has_element?("[data-counter=0]")
     end
   end
 end
