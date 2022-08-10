@@ -104,17 +104,17 @@ defmodule Love.Internal do
     nil
   end
 
-  defp put_quoted_default(module, key, quoted) do
+  defp put_quoted_default(module, key, quoted_default) do
     update_attribute(module, @attrs.defaults, fn defaults ->
-      Map.put(defaults, key, quoted)
+      Map.put(defaults, key, quoted_default)
     end)
   end
 
   def define_defaults(module) do
-    for {key, quoted} <- Module.get_attribute(module, @attrs.defaults) do
+    for {key, quoted_default} <- Module.get_attribute(module, @attrs.defaults) do
       quote do
         def __default__(unquote(key)) do
-          unquote(quoted)
+          unquote(quoted_default)
         end
       end
     end
@@ -195,20 +195,16 @@ defmodule Love.Internal do
   defp eval_meta(%{} = meta, _key, _env), do: meta
 
   # Returns metadata map for a prop field
-  defp eval_meta(quoted_opts, :prop, env) do
-    {opts, _} = Module.eval_quoted(env, quoted_opts)
-
+  defp eval_meta(quoted_opts, :prop, _env) do
     %{
-      required?: not Keyword.has_key?(opts, :default)
+      required?: not Keyword.has_key?(quoted_opts, :default)
     }
   end
 
   # Returns metadata map for a state field
-  defp eval_meta(quoted_opts, :state, env) do
-    {opts, _} = Module.eval_quoted(env, quoted_opts)
-
+  defp eval_meta(quoted_opts, :state, _env) do
     %{
-      initialize?: Keyword.has_key?(opts, :default)
+      initialize?: Keyword.has_key?(quoted_opts, :default)
     }
   end
 
