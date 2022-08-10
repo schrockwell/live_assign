@@ -47,7 +47,8 @@ defmodule Love.View do
     # are fully set up (i.e. wait for __on_definition__/6 to evaluate first!)
     [
       Internal.before_compile_define_meta_fns(__CALLER__, [:prop, :state, :react]),
-      Internal.define_defaults(env.module)
+      Internal.define_defaults(env.module),
+      Internal.before_compile_define_react_wrappers(env)
     ]
   end
 

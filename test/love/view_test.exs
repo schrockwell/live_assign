@@ -12,7 +12,7 @@ defmodule Love.ViewTest do
     :ok
   end
 
-  describe "Love.Component" do
+  describe "Love.View" do
     test "works" do
       defview LoveViewTest do
         state :name, default: "Rockwell"
@@ -30,7 +30,7 @@ defmodule Love.ViewTest do
         end
 
         @react to: :age
-        def put_double_age(socket) do
+        defp put_double_age(socket) do
           put_state(socket, double_age: socket.assigns.age * 2)
         end
       end

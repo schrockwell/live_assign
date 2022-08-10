@@ -35,7 +35,7 @@ defmodule MyAppWeb.ProfileIndexLive do
   end
 
   @react to: :profiles
-  def put_profile_count(socket) do
+  defp put_profile_count(socket) do
     put_state(socket, profile_count: length(socket.assigns.profiles))
   end
 
@@ -90,7 +90,7 @@ defmodule MyAppWeb.UserProfileComponent do
   end
 
   @react to: :profile
-  def put_age(socket) do
+  defp put_age(socket) do
     age = trunc(Date.diff(Date.utc_today(), socket.assigns.profile.birthday) / 365)
     put_state(socket, age: age)
   end

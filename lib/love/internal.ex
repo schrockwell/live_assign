@@ -6,6 +6,7 @@ defmodule Love.Internal do
   alias Phoenix.LiveView
 
   @meta_fn_name :__love_component_meta__
+  @react_fn_name :__love_component_react__
   @socket_private_key :love_component
   @attrs %{
     react: :__reactive_fields__,
@@ -35,12 +36,17 @@ defmodule Love.Internal do
   ##################################################
 
   # Capture the @react function attribute into a module attribute
-  def on_definition(env, :def, name, _args, _guards, _body) do
+  def on_definition(env, type, name, _args, _guards, _body) when type in [:def, :defp] do
     if react_attr = Module.get_attribute(env.module, :react) do
       ensure_not_already_defined!(env.module, :react, name)
 
+      react_meta = %{
+        react_to: List.flatten([Keyword.get(react_attr, :to, [])]),
+        repeats?: Keyword.get(react_attr, :repeats?, false)
+      }
+
       update_attribute(env.module, @attrs.react, fn map ->
-        Map.put(map, name, react_meta(react_attr))
+        Map.put(map, name, react_meta)
       end)
     end
 
@@ -52,12 +58,18 @@ defmodule Love.Internal do
     reset_function_attributes(env.module)
   end
 
-  # Returns a map of metadata for a @react field
-  defp react_meta(react_attr) do
-    %{
-      react_to: List.flatten([Keyword.get(react_attr, :to, [])]),
-      repeats?: Keyword.get(react_attr, :repeats?, false)
-    }
+  # Expose @react functions as `__react__(key, socket)` so that they
+  # are public to us, even if they are defined as private
+  def before_compile_define_react_wrappers(env) do
+    react_fn = @react_fn_name
+
+    for {key, _} <- Module.get_attribute(env.module, @attrs.react) do
+      quote do
+        def unquote(react_fn)(unquote(key), var!(socket)) do
+          unquote(key)(var!(socket))
+        end
+      end
+    end
   end
 
   # Resets all function attributes that we care about, at the end of any __on_definition__
@@ -460,7 +472,7 @@ defmodule Love.Internal do
 
       # Now we can actually evaluate the function and flag it as triggered
       module
-      |> apply(key, [socket])
+      |> apply(@react_fn_name, [key, socket])
       |> flag_as_triggered(key)
     end
   end

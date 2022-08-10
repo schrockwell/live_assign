@@ -43,6 +43,10 @@ defmodule Love do
   Reactive functions are triggered immediately when new prop values are assigned to the component,
   or when `put_state/2` is called.
 
+  If a reactive function is executed multiple times as a result of a single call to `put_state/2`, this
+  indicates a possible infinite loop of reactive callbacks, and a RuntimeError will result. This check
+  can be bypassed with the `repeats?: true` option on the `@react` attribute.
+
   See [the example below](#updating-state-via-reactive-functions) for usage.
 
   ## Event Messages
@@ -72,27 +76,32 @@ defmodule Love do
 
   ### Updating state via reactive functions
 
-      prop :first_name
-      prop :last_name
+      defmodule MyComponent do
+        use Phoenix.LiveComponent
+        use Love.Component
 
-      state :big_display_name
-      state :display_name
-      state :full_name?, default: false
+        prop :first_name
+        prop :last_name
 
-      # Triggered when there are any changes to these props or state
-      @react to: [:first_name, :last_name, :full_name?]
-      def put_display_name(socket) do
-        if socket.assigns.full_name? do
-          put_state(socket, display_name: "\#{socket.assigns.first_name, socket.assigns.last_name}")
-        else
-          put_state(socket, display_name: socket.assigns.first_name)
+        state :big_display_name
+        state :display_name
+        state :full_name?, default: false
+
+        # Triggered when there are any changes to these props or state
+        @react to: [:first_name, :last_name, :full_name?]
+        defp put_display_name(socket) do
+          if socket.assigns.full_name? do
+            put_state(socket, display_name: "\#{socket.assigns.first_name, socket.assigns.last_name}")
+          else
+            put_state(socket, display_name: socket.assigns.first_name)
+          end
         end
-      end
 
-      # Triggered after put_display_name/1 finishes
-      @react to: :display_name
-      def put_big_display_name(socket) do
-        put_state(socket, big_display_name: String.upcase(socket.assigns.display_name))
+        # Triggered after put_display_name/1 finishes
+        @react to: :display_name
+        defp put_big_display_name(socket) do
+          put_state(socket, big_display_name: String.upcase(socket.assigns.display_name))
+        end
       end
   """
 end

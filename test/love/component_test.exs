@@ -29,7 +29,7 @@ defmodule Love.ComponentTest do
       end
 
       @react to: :profile
-      def put_age(socket) do
+      defp put_age(socket) do
         age = trunc(Date.diff(Date.utc_today(), socket.assigns.profile.birthday) / 365)
         put_state(socket, age: age)
       end
@@ -328,12 +328,12 @@ defmodule Love.ComponentTest do
         end
 
         @react to: :thing_a
-        def put_thing_b(socket) do
+        defp put_thing_b(socket) do
           put_state(socket, thing_b: :b)
         end
 
         @react to: :thing_b
-        def put_thing_c(socket) do
+        defp put_thing_c(socket) do
           put_state(socket, thing_c: :c)
         end
 
@@ -366,12 +366,12 @@ defmodule Love.ComponentTest do
         end
 
         @react to: :thing_a
-        def put_thing_b(socket) do
+        defp put_thing_b(socket) do
           put_state(socket, thing_b: :b)
         end
 
         @react to: :thing_b
-        def put_thing_a(socket) do
+        defp put_thing_a(socket) do
           put_state(socket, thing_a: :a)
         end
       end
@@ -395,7 +395,7 @@ defmodule Love.ComponentTest do
         end
 
         @react to: :counter
-        def put_tens_counter(socket) do
+        defp put_tens_counter(socket) do
           put_state(socket, tens_counter: socket.assigns.counter * 10)
         end
 
@@ -431,7 +431,7 @@ defmodule Love.ComponentTest do
         state :counter, default: 10
 
         @react to: :counter, repeats?: true
-        def decrement(socket) do
+        defp decrement(socket) do
           if socket.assigns.counter > 0 do
             put_state(socket, counter: socket.assigns.counter - 1)
           else
