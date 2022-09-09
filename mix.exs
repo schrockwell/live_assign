@@ -38,7 +38,7 @@ defmodule LiveAssign.MixProject do
   end
 
   defp description do
-    "Extends Phoenix.LiveComponent with additional features."
+    "State management conventions for Phoenix LiveView"
   end
 
   defp package do
