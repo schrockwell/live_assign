@@ -1,9 +1,9 @@
-defmodule Love.ViewTest do
+defmodule LiveAssign.ViewTest do
   use ExUnit.Case
 
-  @endpoint LoveTest.Endpoint
+  @endpoint LiveAssignTest.Endpoint
 
-  import Love.TestModules
+  import LiveAssign.TestModules
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
@@ -12,9 +12,9 @@ defmodule Love.ViewTest do
     :ok
   end
 
-  describe "Love.View" do
+  describe "LiveAssign.View" do
     test "works" do
-      defview LoveViewTest do
+      defview LiveAssignViewTest do
         state :name, default: "Rockwell"
         state :age
         state :double_age
@@ -35,7 +35,7 @@ defmodule Love.ViewTest do
         end
       end
 
-      {:ok, view, _html} = live_isolated(build_conn(), LoveViewTest)
+      {:ok, view, _html} = live_isolated(build_conn(), LiveAssignViewTest)
 
       assert view |> has_element?("[data-age=34]")
       assert view |> has_element?("[data-double-age=68]")

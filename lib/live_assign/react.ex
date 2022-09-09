@@ -1,4 +1,4 @@
-defmodule Love.React do
+defmodule LiveAssign.React do
   @moduledoc """
   Define reactive functions.
 
@@ -27,7 +27,7 @@ defmodule Love.React do
 
       defmodule MyComponent do
         use Phoenix.LiveComponent
-        use Love.Component
+        use LiveAssign.Component
 
         prop :first_name
         prop :last_name
@@ -53,12 +53,12 @@ defmodule Love.React do
         end
       end
   """
-  alias Love.Internal
+  alias LiveAssign.Internal
 
   defmacro __using__(_opts) do
     quote do
-      @on_definition {Love.Internal, :on_definition}
-      @before_compile Love.React
+      @on_definition {LiveAssign.Internal, :on_definition}
+      @before_compile LiveAssign.React
     end
   end
 

@@ -1,14 +1,14 @@
-defmodule Love.View do
+defmodule LiveAssign.View do
   @moduledoc """
   Extend LiveViews.
 
-  Add `use Love.View` to a `Phoenix.LiveView`. This adds:
+  Add `use LiveAssign.View` to a `Phoenix.LiveView`. This adds:
 
-  - `import Love.View` to make macros and functions locally available
+  - `import LiveAssign.View` to make macros and functions locally available
   -  Hooks into `mount` and `handle_info`
   """
 
-  alias Love.Internal
+  alias LiveAssign.Internal
   alias Phoenix.LiveView
 
   ##################################################
@@ -19,13 +19,13 @@ defmodule Love.View do
     Internal.init_module_attributes(__CALLER__, [:prop, :react, :state, :defaults])
 
     quote do
-      @before_compile Love.View
+      @before_compile LiveAssign.View
 
-      use Love.React
+      use LiveAssign.React
 
-      import Love.View
+      import LiveAssign.View
 
-      on_mount({Love.View, __MODULE__})
+      on_mount({LiveAssign.View, __MODULE__})
     end
   end
 

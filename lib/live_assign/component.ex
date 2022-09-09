@@ -1,20 +1,20 @@
-defmodule Love.Component do
+defmodule LiveAssign.Component do
   @moduledoc """
   Extend LiveComponents.
 
   ## Usage
 
-  Add `use Love.Component` to a `Phoenix.LiveComponent`. This adds:
+  Add `use LiveAssign.Component` to a `Phoenix.LiveComponent`. This adds:
 
-  - `import Love.Component` to make macros and functions locally available
+  - `import LiveAssign.Component` to make macros and functions locally available
   - `prop :id` to define the required `:id` prop assign
   - `mount/1` and `update/2` default implementations (can safely overriden)
 
-  ## Love.Component Example
+  ## LiveAssign.Component Example
 
       defmodule MyAppWeb.UserProfileComponent do
         use Phoenix.LiveComponent
-        use Love.Component
+        use LiveAssign.Component
 
         prop :profile
         prop :show_avatar?, default: false
@@ -42,7 +42,7 @@ defmodule Love.Component do
       end
   """
 
-  alias Love.Internal
+  alias LiveAssign.Internal
   alias Phoenix.LiveView
 
   ##################################################
@@ -53,10 +53,10 @@ defmodule Love.Component do
     Internal.init_module_attributes(__CALLER__, [:react, :prop, :state, :defaults])
 
     quote do
-      @on_definition {Love.Internal, :on_definition}
-      @before_compile Love.Component
+      @on_definition {LiveAssign.Internal, :on_definition}
+      @before_compile LiveAssign.Component
 
-      import Love.Component
+      import LiveAssign.Component
 
       prop :id
     end
@@ -131,7 +131,7 @@ defmodule Love.Component do
   @doc """
   Defines a prop.
 
-  `prop :id` is automatically defined as a required prop for all components that `use Love.Component`,
+  `prop :id` is automatically defined as a required prop for all components that `use LiveAssign.Component`,
   because every stateful `LiveComponent` requires an `:id`.
 
   ## Options

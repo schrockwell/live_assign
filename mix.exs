@@ -1,9 +1,9 @@
-defmodule Love.MixProject do
+defmodule LiveAssign.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :love_ex,
+      app: :live_assign,
       version: "0.2.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
@@ -14,7 +14,7 @@ defmodule Love.MixProject do
       # Hex
       description: description(),
       package: package(),
-      source_url: "https://github.com/schrockwell/love_ex"
+      source_url: "https://github.com/schrockwell/live_assign"
     ]
   end
 
@@ -55,7 +55,7 @@ defmodule Love.MixProject do
         {"Field Definitions", &(&1[:group] == :fields)},
         {"Guards", &(&1[:group] == :guards)}
       ],
-      main: "Love"
+      main: "LiveAssign"
     ]
   end
 

@@ -1,9 +1,9 @@
-defmodule Love.TestModules do
-  defmodule BaseLoveComponent do
+defmodule LiveAssign.TestModules do
+  defmodule BaseComponent do
     defmacro __using__(_) do
       quote do
         use Phoenix.LiveComponent
-        use Love.Component
+        use LiveAssign.Component
 
         def render(var!(assigns)), do: ~H"<div />"
 
@@ -12,11 +12,11 @@ defmodule Love.TestModules do
     end
   end
 
-  defmodule BaseLoveView do
+  defmodule BaseView do
     defmacro __using__(_) do
       quote do
         use Phoenix.LiveView
-        use Love.View
+        use LiveAssign.View
 
         def render(var!(assigns)), do: ~H""
 
@@ -28,7 +28,7 @@ defmodule Love.TestModules do
   defmacro defcomponent(name, do: quoted) do
     quote do
       defmodule unquote(name) do
-        use BaseLoveComponent
+        use BaseComponent
 
         unquote(quoted)
       end
@@ -38,7 +38,7 @@ defmodule Love.TestModules do
   defmacro defview(name, do: quoted) do
     quote do
       defmodule unquote(name) do
-        use BaseLoveView
+        use BaseView
 
         unquote(quoted)
       end

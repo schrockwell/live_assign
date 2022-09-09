@@ -1,10 +1,10 @@
-defmodule Love.ComponentTest do
+defmodule LiveAssign.ComponentTest do
   use ExUnit.Case
 
-  @endpoint LoveTest.Endpoint
+  @endpoint LiveAssignTest.Endpoint
 
   import LiveIsolatedComponent
-  import Love.TestModules
+  import LiveAssign.TestModules
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 

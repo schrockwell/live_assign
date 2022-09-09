@@ -1,13 +1,13 @@
-defmodule Love.Internal do
+defmodule LiveAssign.Internal do
   @moduledoc false
 
-  import Love.Config
+  import LiveAssign.Config
 
   alias Phoenix.LiveView
 
-  @meta_fn_name :__love_component_meta__
-  @react_fn_name :__love_component_react__
-  @socket_private_key :love_component
+  @meta_fn_name :__live_assign_meta__
+  @react_fn_name :__live_assign_react__
+  @socket_private_key LiveAssign
   @attrs %{
     react: :__reactive_fields__,
     prop: :__prop_fields__,
