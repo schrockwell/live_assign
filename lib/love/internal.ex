@@ -305,33 +305,6 @@ defmodule Love.Internal do
   end
 
   ##################################################
-  # RUNTIME - COMPONENT EVENTS
-  ##################################################
-
-  @doc """
-  Emit a message.
-  """
-  def emit(socket, key, payload) do
-    source = {live_view_module(socket), socket.assigns.id}
-
-    case socket.assigns[key] do
-      nil ->
-        nil
-
-      {pid, custom_key} when is_pid(pid) ->
-        Love.Events.send_message(pid, custom_key, payload, source: source)
-
-      {module, id, custom_key} ->
-        Love.Events.send_message({module, id}, custom_key, payload, source: source)
-
-      destination ->
-        Love.Events.send_message(destination, key, payload, source: source)
-    end
-
-    socket
-  end
-
-  ##################################################
   # RUNTIME - ASSIGN INITIALIZATION
   ##################################################
 
@@ -515,21 +488,6 @@ defmodule Love.Internal do
   ##################################################
   # RUNTIME - LiveComponent.update/2
   ##################################################
-
-  def component_update_hook(socket, %{__message__: %Love.Events.Message{} = message}) do
-    case live_view_module(socket).handle_message(
-           message.name,
-           message.source,
-           message.payload,
-           socket
-         ) do
-      %LiveView.Socket{} = socket ->
-        socket
-
-      _else ->
-        raise "expected handle_message/3 callback to return a %LiveView.Socket{}"
-    end
-  end
 
   if runtime_checks?() do
     def component_update_hook(socket, new_assigns) do

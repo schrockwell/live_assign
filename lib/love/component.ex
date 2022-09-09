@@ -6,7 +6,6 @@ defmodule Love.Component do
 
   Add `use Love.Component` to a `Phoenix.LiveComponent`. This adds:
 
-  - `@behaviour Love.Events` for the optional `c:Love.Events.handle_message/4` callback
   - `import Love.Component` to make macros and functions locally available
   - `prop :id` to define the required `:id` prop assign
   - `mount/1` and `update/2` default implementations (can safely overriden)
@@ -54,7 +53,6 @@ defmodule Love.Component do
     Internal.init_module_attributes(__CALLER__, [:react, :prop, :state, :defaults])
 
     quote do
-      @behaviour Love.Events
       @on_definition {Love.Internal, :on_definition}
       @before_compile Love.Component
 
@@ -260,13 +258,4 @@ defmodule Love.Component do
   def put_state(socket, changes) do
     Internal.put_state(socket, changes)
   end
-
-  @doc """
-  Sends an event message.
-
-  The event `name` is an event prop defined by `event/1`. The destination for the event is determined
-  by the value of the event prop. See `Love.Events.send_message/4` for details on valid destinations.
-  """
-  @spec emit(LiveView.Socket.t(), name :: atom, payload :: any) :: LiveView.Socket.t()
-  defdelegate emit(socket, name, payload \\ nil), to: Internal
 end

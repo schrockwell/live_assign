@@ -42,48 +42,4 @@ defmodule Love.ViewTest do
       assert view |> has_element?("[data-name=Rockwell]")
     end
   end
-
-  describe "handle_message/4" do
-    test "can handle an event emitted from a component to self()" do
-      defcomponent EmitEventComponent do
-        event :on_clicked
-
-        def handle_event("click", _, socket) do
-          {:noreply, emit(socket, :on_clicked, :payload)}
-        end
-
-        def render(assigns) do
-          ~H"""
-          <button phx-click="click" phx-target={@myself} />
-          """
-        end
-      end
-
-      defview HandlMessageView do
-        state :handled?, default: false
-
-        def handle_message(:on_clicked, {EmitEventComponent, "emitter"}, :payload, socket) do
-          put_state(socket, handled?: true)
-        end
-
-        def render(assigns) do
-          ~H"""
-          <div>
-            <.live_component module={EmitEventComponent} id="emitter" on_clicked={self()} />
-            <div data-handled={inspect(@handled?)} />
-          </div>
-          """
-        end
-      end
-
-      {:ok, view, _html} = live_isolated(build_conn(), HandlMessageView)
-
-      assert view |> has_element?("[data-handled=false]")
-
-      view |> element("button") |> render_click()
-      :sys.get_state(view.pid)
-
-      assert view |> has_element?("[data-handled=true]")
-    end
-  end
 end

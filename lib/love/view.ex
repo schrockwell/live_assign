@@ -4,7 +4,6 @@ defmodule Love.View do
 
   Add `use Love.View` to a `Phoenix.LiveView`. This adds:
 
-  - `@behaviour Love.Events` for the optional `c:Love.Events.handle_message/4` callback
   - `import Love.View` to make macros and functions locally available
   -  Hooks into `mount` and `handle_info`
   """
@@ -20,7 +19,6 @@ defmodule Love.View do
     Internal.init_module_attributes(__CALLER__, [:prop, :react, :state, :defaults])
 
     quote do
-      @behaviour Love.Events
       @before_compile Love.View
 
       use Love.React
@@ -110,21 +108,6 @@ defmodule Love.View do
       |> Internal.put_private(:module, module)
       |> Internal.put_private(:assigns_validated?, false)
 
-    {:cont,
-     socket
-     |> LiveView.assign(Internal.initial_state(socket))
-     |> LiveView.attach_hook(:love_view_info, :handle_info, &handle_info_hook/2)}
+    {:cont, LiveView.assign(socket, Internal.initial_state(socket))}
   end
-
-  defp handle_info_hook(%Love.Events.Message{} = message, socket) do
-    {:halt,
-     Internal.live_view_module(socket).handle_message(
-       message.name,
-       message.source,
-       message.payload,
-       socket
-     )}
-  end
-
-  defp handle_info_hook(_message, socket), do: {:cont, socket}
 end

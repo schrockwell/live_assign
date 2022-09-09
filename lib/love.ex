@@ -44,21 +44,6 @@ defmodule Love do
 
   See `Love.React` for details.
 
-  ## Event Messages
-
-  _Supported by `Love.View` and `Love.Component`._
-
-  Love unifies the sending and receiving of events between LiveView and LiveComponents with its
-  `Love.Events` behaviour. Components can emit events to LiveViews or other LiveComponents using
-  one standard callback in both module types: `c:Love.Events.handle_message/4`.
-
-  When writing a component, you no longer have to decide _how_ its events are bubbled up
-  to where they need to go. Just `Love.Component.emit/3` and go.
-
-  Events can also be explicitly sent with `Love.Events.send_message/4`.
-
-  See `Love.Component.event/1` and `Love.Events` for details.
-
   ## Configuration
 
   Love performs some validations at runtime to provide helpful error messages to developers. You may
