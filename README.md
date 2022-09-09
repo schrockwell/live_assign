@@ -25,31 +25,6 @@ LiveComponents also gain additional functionality:
 
 Here are a couple examples showing off these features. For complete details, please reference [the docs](https://hexdocs.pm/live_assign/).
 
-## LiveView Example
-
-```elixir
-defmodule MyAppWeb.ProfileIndexLive do
-  use Phoenix.LiveView
-  use LiveAssign.LiveView
-
-  state :profiles, default: load_profiles()
-  state :profile_count
-
-  @react to: :profiles
-  defp put_profile_count(socket) do
-    put_state(socket, profile_count: length(socket.assigns.profiles))
-  end
-
-  defp load_profiles, do: # ...
-
-  # ...
-end
-```
-
-The `:profiles` and `:profile_count` assigns are **state**. They can be modified throughout the LiveView lifecycle, and reactive functions can respond to their changes.
-
-The `put_profile_count/1` callback is a **reactive function** that is automatically invoked as soon as any changes occur to the `:profiles` state.
-
 ## LiveComponent Example
 
 ```elixir
@@ -91,6 +66,31 @@ The `:inner_block` assign is a **slot prop**. It is required but can be made opt
 
 The `put_age/1` function is a **reactive callback**. It is automatically evaluated whenever the value of the `:profiles` state changes. The function can react to prop changes and state changes.
 
+## LiveView Example
+
+```elixir
+defmodule MyAppWeb.ProfileIndexLive do
+  use Phoenix.LiveView
+  use LiveAssign.LiveView
+
+  state :profiles, default: load_profiles()
+  state :profile_count
+
+  @react to: :profiles
+  defp put_profile_count(socket) do
+    put_state(socket, profile_count: length(socket.assigns.profiles))
+  end
+
+  defp load_profiles, do: # ...
+
+  # ...
+end
+```
+
+The `:profiles` and `:profile_count` assigns are **state**. They can be modified throughout the LiveView lifecycle, and reactive functions can respond to their changes.
+
+The `put_profile_count/1` callback is a **reactive function** that is automatically invoked as soon as any changes occur to the `:profiles` state.
+
 ## Installation
 
 The package can be installed by adding `live_assign` to your list of dependencies in `mix.exs`:
@@ -98,7 +98,7 @@ The package can be installed by adding `live_assign` to your list of dependencie
 ```elixir
 def deps do
   [
-    {:live_assign, "~> 0.2.0"}
+    {:live_assign, "~> 0.3.0"}
   ]
 end
 ```
