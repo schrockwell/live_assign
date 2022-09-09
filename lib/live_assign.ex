@@ -1,7 +1,7 @@
 defmodule LiveAssign do
   @moduledoc """
 
-  Conventions for the development of LiveViews and LiveComponents.
+  Conventions for managing state of LiveViews and LiveComponents.
 
   See the [README](README.md) for another overview and some examples.
 

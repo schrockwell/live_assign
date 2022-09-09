@@ -24,8 +24,6 @@ defmodule LiveAssign.LiveComponent do
 
         slot :inner_block
 
-        event :on_selected
-
         def handle_event("toggle-details", _, socket) do
           {:noreply, put_state(socket, socket, expand_details?: not socket.assigns.expand_details?)}
         end
@@ -184,24 +182,26 @@ defmodule LiveAssign.LiveComponent do
   end
 
   @doc """
-  Defines an event prop.
+  Defines a LiveEvent event prop.
 
-  Event props are always optional, and default to `nil`.
+  Event props are always optional, and default to `nil`. They are designed to work with
+  the [LiveEvent](https://hexdocs.pm/live_event/) library.
 
-  The value of this prop must be a destination to receive the event, either a PID or `{module, id}`.
-  See `emit/3` for details on raising events.
+  Following LiveEvent conventions, the value of this prop must be a destination to receive the
+  event, either a pid or `{module, id}`. See `LiveEvent.emit/3` for details on raising events.
 
   The emitted event name defaults to the name of the event prop. The event name can be overridden
   by the parent specifying `{pid, :my_custom_event_name}` or `{module, id, :my_custom_event_name}`.
 
-  ## Example
+  ## Example (LiveEvent required)
 
+      # To define it on the LiveComponent:
       event :on_selected
 
-      # To raise it:
+      # To raise it from the LiveComponent:
       emit(socket, :on_selected, "some payload")
 
-      # To handle it:
+      # To handle it somewhere else:
       handle_event(:on_selected, {module, id}, "some payload", socket)
   """
   @doc group: :fields
