@@ -1,4 +1,4 @@
-defmodule LiveAssign.ViewTest do
+defmodule LiveAssign.LiveViewTest do
   use ExUnit.Case
 
   @endpoint LiveAssignTest.Endpoint
@@ -12,7 +12,7 @@ defmodule LiveAssign.ViewTest do
     :ok
   end
 
-  describe "LiveAssign.View" do
+  describe "LiveAssign.LiveView" do
     test "works" do
       defview LiveAssignViewTest do
         state :name, default: "Rockwell"

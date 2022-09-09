@@ -27,7 +27,7 @@ defmodule LiveAssign.React do
 
       defmodule MyComponent do
         use Phoenix.LiveComponent
-        use LiveAssign.Component
+        use LiveAssign.LiveComponent
 
         prop :first_name
         prop :last_name

@@ -9,35 +9,35 @@ defmodule LiveAssign do
 
   ## Props
 
-  _Supported by `LiveAssign.Component`._
+  _Supported by `LiveAssign.LiveComponent`._
 
   Props are a one-way street: they are assigns that can only be passed _in_ to a component,
   and are not modified internally beyond that. Props can be required by the component,
   or made optional with a default value. Reactive functions can be triggered by prop changes.
 
-  See `LiveAssign.Component.prop/2` for details.
+  See `LiveAssign.LiveComponent.prop/2` for details.
 
   ## Slots
 
-  _Supported by `LiveAssign.Component`._
+  _Supported by `LiveAssign.LiveComponent`._
 
   LiveComponent slots are represented as "slot props". They may be required or optional.
 
-  See `LiveAssign.Component.slot/2` for details.
+  See `LiveAssign.LiveComponent.slot/2` for details.
 
   ## State
 
-  _Supported by `LiveAssign.View` and `LiveAssign.Component`._
+  _Supported by `LiveAssign.LiveView` and `LiveAssign.LiveComponent`._
 
   State is used to track internal LiveView and LiveComponent logic, and can be modified throughout
   their lifecycles. State can be initialized with default values. Reactive functions can be triggered
   by state changes.
 
-  See `LiveAssign.Component.state/2` and `LiveAssign.View.state/2` for details.
+  See `LiveAssign.LiveComponent.state/2` and `LiveAssign.LiveView.state/2` for details.
 
   ## Reactive Functions
 
-  _Supported by `LiveAssign.View` and `LiveAssign.Component`._
+  _Supported by `LiveAssign.LiveView` and `LiveAssign.LiveComponent`._
 
   Reactive functions are regular functions tagged with the `@react` attribute. They can be triggered
   by changes to props or state.

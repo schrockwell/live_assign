@@ -1,10 +1,10 @@
-defmodule LiveAssign.View do
+defmodule LiveAssign.LiveView do
   @moduledoc """
   Extend LiveViews.
 
-  Add `use LiveAssign.View` to a `Phoenix.LiveView`. This adds:
+  Add `use LiveAssign.LiveView` to a `Phoenix.LiveView`. This adds:
 
-  - `import LiveAssign.View` to make macros and functions locally available
+  - `import LiveAssign.LiveView` to make macros and functions locally available
   -  Hooks into `mount` and `handle_info`
   """
 
@@ -19,13 +19,13 @@ defmodule LiveAssign.View do
     Internal.init_module_attributes(__CALLER__, [:prop, :react, :state, :defaults])
 
     quote do
-      @before_compile LiveAssign.View
+      @before_compile LiveAssign.LiveView
 
       use LiveAssign.React
 
-      import LiveAssign.View
+      import LiveAssign.LiveView
 
-      on_mount({LiveAssign.View, __MODULE__})
+      on_mount({LiveAssign.LiveView, __MODULE__})
     end
   end
 

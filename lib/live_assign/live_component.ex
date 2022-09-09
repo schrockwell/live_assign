@@ -1,20 +1,20 @@
-defmodule LiveAssign.Component do
+defmodule LiveAssign.LiveComponent do
   @moduledoc """
   Extend LiveComponents.
 
   ## Usage
 
-  Add `use LiveAssign.Component` to a `Phoenix.LiveComponent`. This adds:
+  Add `use LiveAssign.LiveComponent` to a `Phoenix.LiveComponent`. This adds:
 
-  - `import LiveAssign.Component` to make macros and functions locally available
+  - `import LiveAssign.LiveComponent` to make macros and functions locally available
   - `prop :id` to define the required `:id` prop assign
   - `mount/1` and `update/2` default implementations (can safely overriden)
 
-  ## LiveAssign.Component Example
+  ## LiveAssign.LiveComponent Example
 
       defmodule MyAppWeb.UserProfileComponent do
         use Phoenix.LiveComponent
-        use LiveAssign.Component
+        use LiveAssign.LiveComponent
 
         prop :profile
         prop :show_avatar?, default: false
@@ -54,9 +54,9 @@ defmodule LiveAssign.Component do
 
     quote do
       @on_definition {LiveAssign.Internal, :on_definition}
-      @before_compile LiveAssign.Component
+      @before_compile LiveAssign.LiveComponent
 
-      import LiveAssign.Component
+      import LiveAssign.LiveComponent
 
       prop :id
     end
@@ -131,7 +131,7 @@ defmodule LiveAssign.Component do
   @doc """
   Defines a prop.
 
-  `prop :id` is automatically defined as a required prop for all components that `use LiveAssign.Component`,
+  `prop :id` is automatically defined as a required prop for all components that `use LiveAssign.LiveComponent`,
   because every stateful `LiveComponent` requires an `:id`.
 
   ## Options

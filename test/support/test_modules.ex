@@ -3,7 +3,7 @@ defmodule LiveAssign.TestModules do
     defmacro __using__(_) do
       quote do
         use Phoenix.LiveComponent
-        use LiveAssign.Component
+        use LiveAssign.LiveComponent
 
         def render(var!(assigns)), do: ~H"<div />"
 
@@ -16,7 +16,7 @@ defmodule LiveAssign.TestModules do
     defmacro __using__(_) do
       quote do
         use Phoenix.LiveView
-        use LiveAssign.View
+        use LiveAssign.LiveView
 
         def render(var!(assigns)), do: ~H""
 

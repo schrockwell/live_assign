@@ -1,4 +1,4 @@
-# LiveAssign.View and LiveAssign.Component
+# LiveAssign.LiveView and LiveAssign.LiveComponent
 
 ![Test Status](https://github.com/schrockwell/live_assign/actions/workflows/elixir.yml/badge.svg)
 [![Module Version](https://img.shields.io/hexpm/v/live_assign.svg)](https://hex.pm/packages/live_assign)
@@ -24,12 +24,12 @@ LiveComponents also gain additional functionality:
 
 Here are a couple examples showing off these features. For complete details, please reference [the docs](https://hexdocs.pm/live_assign/).
 
-## LiveAssign.View Example
+## LiveAssign.LiveView Example
 
 ```elixir
 defmodule MyAppWeb.ProfileIndexLive do
   use Phoenix.LiveView
-  use LiveAssign.View
+  use LiveAssign.LiveView
 
   state :profiles, default: load_profiles()
   state :profile_count
@@ -52,16 +52,16 @@ end
 
 The `:profiles`, `:profile_count`, and `selected_profile_id` assigns are **state**. They can be modified throughout the LiveView lifecycle, and reactive functions can respond to their changes.
 
-The `handle_message/4` callback is part of the `LiveAssign.View` behaviour. It's handling the event emitted by `UserProfileComponent`, which is wired up via its `:on_selected` event prop (see below).
+The `handle_message/4` callback is part of the `LiveAssign.LiveView` behaviour. It's handling the event emitted by `UserProfileComponent`, which is wired up via its `:on_selected` event prop (see below).
 
 The `put_profile_count/1` callback is a **reactive function** that is automatically invoked as soon as any changes occur to the `:profiles` state.
 
-## LiveAssign.Component Example
+## LiveAssign.LiveComponent Example
 
 ```elixir
 defmodule MyAppWeb.UserProfileComponent do
   use Phoenix.LiveComponent
-  use LiveAssign.Component
+  use LiveAssign.LiveComponent
 
   prop :profile
   prop :show_avatar?, default: false
@@ -93,7 +93,7 @@ end
 
 The `:profile` assign is a **required prop**. If it is not passed in, a helpful runtime error will occur.
 
-The `:id` assign is also a required prop, but it is implicitly defined by `use LiveAssign.Component`, because every LiveComponent requires an `:id`.
+The `:id` assign is also a required prop, but it is implicitly defined by `use LiveAssign.LiveComponent`, because every LiveComponent requires an `:id`.
 
 The `:show_avatar?` assign is an **optional prop** that defaults to `false` when unspecified.
 
@@ -101,7 +101,7 @@ The `:expand_details?` and `:age` assigns are **state**. They can be modified vi
 
 The `:inner_block` assign is a **slot prop**. It is required but can be made optional with the `required?: false` option.
 
-The `:on_expanded` assign is a **event prop**. Events raised via `emit/3` can be handled by any LiveAssign.View _or_ LiveAssign.Component that implements the universal `handle_message/4` callback. Pass in a pid to send a message to a LiveAssign.View, or `{module, id}` to send a message to a LiveAssign.Component.
+The `:on_expanded` assign is a **event prop**. Events raised via `emit/3` can be handled by any LiveAssign.LiveView _or_ LiveAssign.LiveComponent that implements the universal `handle_message/4` callback. Pass in a pid to send a message to a LiveAssign.LiveView, or `{module, id}` to send a message to a LiveAssign.LiveComponent.
 
 The `put_age/1` function is a **reactive callback**. It is automatically evaluated whenever the value of the `:profiles` state changes. The function can react to prop changes and state changes.
 

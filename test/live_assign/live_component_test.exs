@@ -1,4 +1,4 @@
-defmodule LiveAssign.ComponentTest do
+defmodule LiveAssign.LiveComponentTest do
   use ExUnit.Case
 
   @endpoint LiveAssignTest.Endpoint
