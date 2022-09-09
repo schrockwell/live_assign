@@ -44,7 +44,7 @@ defmodule LiveAssign.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/elixir-ecto/postgrex"}
+      links: %{"GitHub" => "https://github.com/schrockwell/live_assign"}
     ]
   end
 
