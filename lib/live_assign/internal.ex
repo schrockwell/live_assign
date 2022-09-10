@@ -489,6 +489,9 @@ defmodule LiveAssign.Internal do
   # RUNTIME - LiveComponent.update/2
   ##################################################
 
+  # Ignore LiveEvent events
+  def component_update_hook(socket, %{__message__: %{__struct__: LiveEvent.Event}}), do: socket
+
   if runtime_checks?() do
     def component_update_hook(socket, new_assigns) do
       socket
